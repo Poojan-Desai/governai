@@ -123,7 +123,7 @@ Interpretation:
 3. Second `cloud:run`: S3 objects and Snowflake batches are reused, and dbt is
    skipped because no accepted input changed.
 
-Only after this sequence succeeds may `public/data/cloud-status.json` display
+Only after this sequence succeeds may `src/data/cloud-status.json` display
 `VERIFIED`. Keep `.local/cloud/latest-run.json` as local evidence; inspect it for
 batch IDs, row counts, hashes, dbt command, and reconciliation status before
 sharing screenshots.

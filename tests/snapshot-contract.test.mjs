@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const path = new URL("../public/data/demo-snapshot.json", import.meta.url);
+const path = new URL("../src/data/demo-snapshot.json", import.meta.url);
 const load = async () => JSON.parse(await readFile(path,"utf8"));
-const cloudPath = new URL("../public/data/cloud-status.json", import.meta.url);
+const cloudPath = new URL("../src/data/cloud-status.json", import.meta.url);
 const loadCloud = async () => JSON.parse(await readFile(cloudPath,"utf8"));
 
 test("snapshot comes from a completed governed run", async () => {
@@ -26,7 +26,7 @@ test("incident proves isolation and computed impact", async () => {
   assert.ok(data.incident.impacted_asset_ids.includes("dashboard.risk_operations"));
 });
 
-test("public evidence excludes row-level direct identifiers", async () => {
+test("bundled evidence excludes row-level direct identifiers", async () => {
   const text=JSON.stringify(await load()).toLowerCase();
   assert.doesNotMatch(text,/customer\d{5}@example\.test/);
   assert.doesNotMatch(text,/synthetic customer \d{5}/);

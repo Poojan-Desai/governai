@@ -97,7 +97,7 @@ npm run cloud:incident
 | `snowflake/sql` | Ordered warehouse, RBAC, stage, masking, and verification SQL |
 | `dbt` | Staging, curated, feature, KPI, documentation, and data tests |
 | `src` | Recruiter-friendly React/TypeScript control plane |
-| `public/data` | Generated aggregate evidence; never raw customer records |
+| `src/data` | Generated aggregate evidence bundled into the dashboard; never raw customer records |
 | `docs` | Architecture, decisions, security, deployment, status, and interview prep |
 
 No real customer data, bank systems, credentials, deployment claims, or invented
