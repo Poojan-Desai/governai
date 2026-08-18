@@ -22,6 +22,26 @@ erDiagram
 | `CURATED.FEATURE_ACCOUNT_BEHAVIOR_30D` | Account/latest as-of date | dbt table | Explainable behavioral features, not a classifier |
 | `ANALYTICS.MART_MONTHLY_LOSS_KPIS` | UTC calendar month | dbt table | Dashboard-ready loss totals and rates |
 
+Phase 3A also registers two virtual catalog assets:
+`EXPERIMENT.CARD_ALERT_ENROLLMENT_V1` for the aggregate experiment evidence and
+`DASHBOARD.EXPERIMENT_LAB` for its governed presentation. The experiment reads
+only governed account IDs for stable assignment; individual assignments are not
+written into the public snapshot.
+
+Phase 4A and 5A add virtual control-plane assets rather than new row-level
+tables:
+
+- `SEMANTIC.LOSS_METRICS_V1` owns approved metric definitions.
+- `ASSISTANT.GOVERNED_ANALYTICS_V1` owns bounded cited answer evidence.
+- `MODEL.LOSS_FORECAST_CHALLENGER_V1` owns time-based comparison evidence.
+- `MONITOR.LOSS_FORECAST_DRIFT_V1` owns aggregate window and threshold evidence.
+- `DASHBOARD.MODEL_GOVERNANCE` presents the model card and approval gates.
+
+The assistant snapshot contains questions, aggregate answers, fixed SQL
+templates, and citations. Model evidence contains monthly aggregate folds and
+distribution summaries. Neither contains customer, account, or transaction
+records.
+
 `GOVERNANCE.BATCH_LOADS`, `PIPELINE_EVENTS`, `RECONCILIATION_RESULTS`,
 `LINEAGE_EDGES`, and `ACCESS_POLICY_EVENTS` form the Snowflake control plane.
 Every raw table retains `BATCH_ID`, `SOURCE_SHA256`, and `LOADED_AT`; the fact

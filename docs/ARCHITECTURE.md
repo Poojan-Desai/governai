@@ -79,3 +79,55 @@ Phase 2 contains production-facing adapters, SQL, dbt, and Terraform plus local
 test doubles used only for deterministic tests. No cloud endpoint was available
 in the build environment, so runtime semantics such as Snowflake SQL execution,
 AWS IAM trust, and service-specific error behavior still require the live gate.
+
+## Phase 3A experiment evidence path
+
+```mermaid
+flowchart LR
+  ACC["Governed account IDs"] --> ASSIGN["Stable SHA-256 assignment"]
+  ASSIGN --> CONTROL["Control arm"]
+  ASSIGN --> TREAT["Treatment arm"]
+  CONTROL & TREAT --> KPI["Predeclared completion KPI"]
+  KPI --> INFER["95% CI + two-sided z-test"]
+  INFER --> VALUE["Sample-bounded impact + ROI assumptions"]
+  VALUE --> LAB["Experiment Lab dashboard"]
+```
+
+Assignment and simulated outcomes use independent deterministic hash streams.
+The evidence snapshot publishes aggregate arm counts, inference, economics, and
+limitations plus an assignment digest—not account-level assignments. Phase 3A
+validates mechanics only; there is no live exposure or customer outcome path.
+
+## Phase 4A governed-answer path
+
+```mermaid
+flowchart LR
+  Q["User question"] --> P{"Input policy"}
+  P -->|blocked| B["No query executed"]
+  P -->|safe| R{"Approved intent router"}
+  R -->|unknown| A["Abstain"]
+  R -->|known| S["Fixed aggregate SELECT"]
+  S --> M["Semantic metric"]
+  M --> C["Answer + asset citation"]
+```
+
+Phase 4A has no open SQL generation and no external LLM call. Question text can
+select only code-owned read-only templates. Unsupported questions abstain; SQL
+or instruction-injection patterns stop before database access.
+
+## Phase 5A model-governance path
+
+```mermaid
+flowchart LR
+  KPI["Monthly loss KPI"] --> BT["Expanding-window backtest"]
+  FACT["Governed transaction fact"] --> DRIFT["Aggregate SMD monitor"]
+  BT --> CARD["Model card + limitations"]
+  DRIFT --> CARD
+  CARD --> GATE{"Approval gates"}
+  GATE -->|local evidence| REVIEW["Research champion"]
+  GATE -->|external approvals absent| BLOCK["Production blocked"]
+```
+
+The baseline and challenger share identical time folds. Monitoring compares
+declared historical windows, while approval state remains independent of the
+performance result.

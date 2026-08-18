@@ -5,23 +5,27 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && mkdir -p dist/server && cp hosting/worker.js dist/server/index.js",
     "preview": "vite preview --host 0.0.0.0",
     "lint": "eslint .",
     "test:web": "node --test tests/snapshot-contract.test.mjs",
     "test:python": "PYTHONPATH=backend python3 -m unittest discover -s backend/tests -v",
     "test": "npm run test:python && npm run test:web && npm run lint && npm run build",
     "demo": "PYTHONPATH=backend python3 -m governai.cli demo --project-root . --reset",
+    "experiment:status": "PYTHONPATH=backend python3 -m governai.cli experiment-status --project-root .",
+    "assistant:status": "PYTHONPATH=backend python3 -m governai.cli assistant-status --project-root .",
+    "model:status": "PYTHONPATH=backend python3 -m governai.cli model-status --project-root .",
     "cloud:status": "PYTHONPATH=backend python3 -m governai.cli cloud-status --project-root .",
     "cloud:run": "PYTHONPATH=backend python3 -m governai.cli cloud-run --project-root .",
     "cloud:incident": "PYTHONPATH=backend python3 -m governai.cli cloud-incident --project-root ."
   },
   "dependencies": {
+    "@openai/sites-vite-plugin": "^0.2.0",
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "typescript": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "typescript": "latest",
+    "vite": "latest"
   },
   "devDependencies": {
     "@eslint/js": "latest",
