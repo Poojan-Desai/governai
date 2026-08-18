@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build && mkdir -p dist/server && cp hosting/worker.js dist/server/index.js",
     "preview": "vite preview --host 0.0.0.0",
     "lint": "eslint .",
-    "test:web": "node --test tests/snapshot-contract.test.mjs",
+    "test:web": "node --test tests/*.test.mjs",
     "test:python": "PYTHONPATH=backend python3 -m unittest discover -s backend/tests -v",
     "test": "npm run test:python && npm run test:web && npm run lint && npm run build",
     "demo": "PYTHONPATH=backend python3 -m governai.cli demo --project-root . --reset",
