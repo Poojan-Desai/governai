@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 
 from governai.contracts import validate_transactions
+from governai.cli import run_experiment_status
 from governai.generator import generate_sources
 from governai.pipeline import LocalPipeline
 from governai.snapshot import build_snapshot
@@ -56,9 +57,26 @@ class GovernAITests(unittest.TestCase):
             snapshot=build_snapshot(root/"db.sqlite")
         self.assertEqual(snapshot["incident"]["warehouse_rows_before"],snapshot["incident"]["warehouse_rows_after"])
         self.assertEqual(snapshot["incident"]["failed_checks"].__len__(),4)
+        self.assertEqual(snapshot["experiment"]["status"],"SIMULATED_LOCALLY_VERIFIED")
+        self.assertEqual(snapshot["experiment"]["design"]["analysis_population"],40)
+        self.assertEqual(snapshot["experiment"]["metric"]["metric_id"],"alert_enrollment_completion_7d")
+        self.assertEqual(snapshot["assistant"]["status"],"DETERMINISTIC_LOCAL_PROTOTYPE")
+        self.assertEqual(snapshot["assistant"]["examples"][-1]["status"],"BLOCKED_BY_POLICY")
+        self.assertEqual(snapshot["model_governance"]["status"],"RESEARCH_ONLY_LOCALLY_VERIFIED")
+        self.assertEqual(snapshot["model_governance"]["approval_gates"][-1]["status"],"BLOCKED")
         text=json.dumps(snapshot).lower()
         self.assertNotIn("synthetic customer 00001",text); self.assertNotIn("customer00001@example.test",text); self.assertNotIn("+1-555-",text)
+        self.assertNotIn("acc-00001",text)
         self.assertEqual(sum(c["classification"]=="DIRECT_IDENTIFIER" for c in snapshot["column_classifications"]),3)
+
+    def test_experiment_status_cli_returns_aggregate_evidence_only(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory); local=root/".local"
+            generated=generate_sources(local/"sources",customer_count=30,account_count=40,transactions_per_month=25)
+            pipeline=LocalPipeline(local/"governai.db"); pipeline.initialize(); pipeline.run_demo(generated.base_dir,generated.incident_file)
+            evidence=run_experiment_status(root)
+        self.assertEqual(evidence["design"]["analysis_population"],40)
+        self.assertNotIn("ACC-00001",json.dumps(evidence))
 
 
 if __name__ == "__main__": unittest.main()

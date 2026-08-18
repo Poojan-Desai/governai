@@ -4,9 +4,13 @@ import argparse
 import csv
 import json
 import shutil
+import sqlite3
 from pathlib import Path
 
+from .analytics_assistant import build_assistant_evidence
+from .experiment import run_experiment
 from .generator import generate_sources
+from .model_governance import build_model_governance
 from .pipeline import LocalPipeline
 from .snapshot import write_snapshot
 
@@ -25,6 +29,32 @@ def write_cloud_status(root: Path) -> dict[str, object]:
     from .cloud.status import write_readiness
 
     return write_readiness(root, root / "src" / "data" / "cloud-status.json")
+
+
+def run_experiment_status(root: Path) -> dict[str, object]:
+    database = root / ".local" / "governai.db"
+    if not database.exists():
+        raise SystemExit("Local evidence database not found; run `npm run demo` first")
+    connection = sqlite3.connect(database)
+    try:
+        account_ids = [
+            row[0]
+            for row in connection.execute("SELECT account_id FROM dim_account ORDER BY account_id")
+        ]
+    finally:
+        connection.close()
+    return run_experiment(account_ids)
+
+
+def run_local_evidence(root: Path, builder) -> dict[str, object]:
+    database = root / ".local" / "governai.db"
+    if not database.exists():
+        raise SystemExit("Local evidence database not found; run `npm run demo` first")
+    connection = sqlite3.connect(database)
+    try:
+        return builder(connection)
+    finally:
+        connection.close()
 
 
 def build_live_pipeline(root: Path):
@@ -73,13 +103,19 @@ def run_cloud_incident(root: Path) -> dict[str, object]:
 def main() -> None:
     parser=argparse.ArgumentParser(); sub=parser.add_subparsers(dest="command",required=True)
     demo=sub.add_parser("demo"); demo.add_argument("--project-root",type=Path,default=Path.cwd()); demo.add_argument("--reset",action="store_true")
-    for name in ("cloud-status", "cloud-run", "cloud-incident"):
+    for name in ("experiment-status", "assistant-status", "model-status", "cloud-status", "cloud-run", "cloud-incident"):
         command = sub.add_parser(name)
         command.add_argument("--project-root", type=Path, default=Path.cwd())
     args=parser.parse_args()
     root = args.project_root.resolve()
     if args.command=="demo":
         result = run_demo(root,args.reset)
+    elif args.command == "experiment-status":
+        result = run_experiment_status(root)
+    elif args.command == "assistant-status":
+        result = run_local_evidence(root, build_assistant_evidence)
+    elif args.command == "model-status":
+        result = run_local_evidence(root, build_model_governance)
     elif args.command == "cloud-status":
         result = write_cloud_status(root)
     elif args.command == "cloud-run":

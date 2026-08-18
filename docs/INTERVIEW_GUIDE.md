@@ -6,9 +6,46 @@
 visible. Phase 1 proves deterministic Python/SQL ingestion, fail-closed data
 quality, metadata, lineage, privacy, audit, KPIs, and a transparent baseline.
 Phase 2 adds real S3 and Snowflake adapters, a small dbt DAG, least-privilege
-roles/masks, Terraform, and manifest reconciliation. I verified all local
-contracts and the frontend build; the live AWS/Snowflake gate is still pending,
-so I do not describe it as deployed.”
+roles/masks, Terraform, and manifest reconciliation. Phase 3A adds deterministic
+experiment assignment, a predeclared KPI, independently tested inference, and
+transparent ROI assumptions. Phase 4A adds cited, policy-bounded analytical
+answers, and Phase 5A adds time-aware model comparison, drift, and approval
+gates. I verified the local contracts and frontend build; cloud execution,
+customer experimentation, external LLM use, and production model approval are
+not claimed.”
+
+## Explain Phase 3A in plain English
+
+1. Governed synthetic accounts are assigned to control or treatment using a
+   stable SHA-256 bucket, so reruns produce the same assignment.
+2. Outcomes use a separate deterministic stream with declared probabilities;
+   they are simulation inputs, not observed customer behavior.
+3. The primary KPI, direction, alpha, confidence interval, significance test,
+   and sample-ratio check are versioned before analysis.
+4. Independent tests recompute arm counts, lift, confidence limits, p-value,
+   impact, and ROI rather than trusting a dashboard rendering.
+5. The positive seeded result can only advance to a governed live-pilot review;
+   it cannot authorize a production rollout.
+
+## Explain Phase 4A in plain English
+
+1. A question first passes an input policy that blocks unsafe instructions.
+2. Supported questions map to fixed, reviewed aggregate SQL; user text is never
+   turned into SQL.
+3. The answer cites its semantic metric, governed asset, record scope, and field.
+4. Unknown questions abstain instead of producing a likely-sounding response.
+5. No external LLM is called; this phase proves the governance boundary first.
+
+## Explain Phase 5A in plain English
+
+1. A previous-month baseline and OLS challenger use the same expanding time
+   folds, avoiding random-split leakage.
+2. MAE and RMSE are recomputed from published fold predictions in tests.
+3. Aggregate feature windows are compared with standardized mean difference.
+4. Intended use, prohibited use, ownership, limitations, and thresholds stay
+   attached to the result.
+5. Better research performance cannot override missing model-risk and business
+   approvals; production remains blocked.
 
 ## Explain the Phase 2 flow in plain English
 
@@ -87,10 +124,12 @@ The same command can later be invoked by a scheduler.
 
 ### What can you claim today?
 
-You can explain and show the locally verified Phase 1 platform, Phase 2 adapter
-code, tests, dbt DAG, SQL RBAC/masks, Terraform, and dashboard honesty state. You
-cannot say “deployed on AWS,” “loaded Snowflake,” “dbt passed in Snowflake,” or
-“masking verified” until the live steps succeed.
+You can explain and show the locally verified data foundation, Phase 2 adapter
+code, tests, dbt DAG, SQL RBAC/masks, Terraform, seeded experiment, governed
+assistant controls, research model backtest, drift, and dashboard honesty state.
+You cannot say “deployed on AWS,” “loaded Snowflake,” “dbt passed in Snowflake,”
+“live customer lift,” “LLM-powered,” or “production model approved” until the
+corresponding external evidence exists.
 
 ## Likely follow-ups
 
@@ -105,7 +144,12 @@ cannot say “deployed on AWS,” “loaded Snowflake,” “dbt passed in Snowf
 - **What if S3 already has the key with different bytes?** The adapter raises an
   idempotency conflict rather than overwrite history.
 - **Is the OLS model production-ready?** No. Six synthetic months demonstrate
-  model lineage and explainability, not forecasting performance.
+  model lineage and a governance workflow, not production performance. Three
+  backtest folds are explicitly insufficient.
+- **Why no LLM in the assistant?** The policy, semantic, authorization, citation,
+  and abstention boundary should be deterministic and testable before adding a
+  probabilistic model. A future model cannot bypass that boundary.
 
-Recommended walkthrough: `generator.py` → `cloud/orchestrator.py` → `s3.py` →
-`snowflake.py` → `dbt/models` → Terraform → Phase 2 tests → cloud dashboard.
+Recommended walkthrough: `generator.py` → `pipeline.py` → `catalog.py` →
+`experiment.py` → `analytics_assistant.py` → `model_governance.py` → cloud
+orchestrator/dbt/Terraform → tests → dashboard.

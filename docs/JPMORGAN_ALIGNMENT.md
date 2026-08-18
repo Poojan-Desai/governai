@@ -15,9 +15,9 @@ it is not a keyword checklist.
 | AWS and IaC | Private/versioned/KMS S3 design, lifecycle, IAM policies, external-role trust | Terraform authored/tested statically; no resources created |
 | Snowflake and dbt | Layered warehouse, COPY/MERGE, tests/docs/freshness, small dependency DAG | Implemented; not executed against account |
 | KPI communication | Evidence-backed monthly loss dashboard and cloud status controls | Implemented + build/contract tested |
-| ML judgment | Explainable OLS lineage baseline with displayed limitations | Implemented + locally tested |
-| Experimentation | Control/treatment CIs, significance, impact, ROI | Phase 3 planned; not implemented |
-| Responsible LLM analytics | Governed NL-to-SQL, citations, limitations | Later phase planned; not implemented |
+| ML judgment | Baseline/challenger time backtest, model card, drift, limitations, approval block | Research-only + locally verified |
+| Experimentation | Stable assignment, predeclared KPI, CI, significance, bounded impact, ROI assumptions | Phase 3A simulated + locally verified |
+| Responsible AI analytics | Approved semantic metrics, fixed aggregate SQL, citations, injection blocking, abstention | Phase 4A deterministic prototype + locally verified |
 
 Databricks is not included just because it appears in job descriptions.
 Snowflake plus dbt serves the current batch-analytics need; Spark would be added
