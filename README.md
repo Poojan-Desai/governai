@@ -4,6 +4,9 @@
 
 **Evidence-first Data & AI governance portfolio by Poojan Desai**
 
+[Hosted preview (owner-only)](https://governai-poojan-desai.mannered.chatgpt.site)
+· [Interview walkthrough](docs/PORTFOLIO_WALKTHROUGH.md)
+
 GovernAI is an enterprise-style Data & AI governance platform built with safe,
 deterministic simulated banking data. It makes the trust path visible: source
 files, quality decisions, warehouse tables, dbt transformations, lineage,
@@ -23,7 +26,7 @@ experimentation, governed analytics, and responsible ML.
 | Phase 3A experimentation | Stable assignment, predeclared KPI, confidence interval, significance, sample-bounded impact, ROI assumptions, Experiment Lab | Seeded calculations match independent references + browser/build checks | Simulated locally; no live customer experiment |
 | Phase 4A governed analytics | Approved semantic metrics, fixed read-only queries, citations, abstention, injection blocking | Numeric reconciliation + adversarial tests | Deterministic local prototype; no external LLM |
 | Phase 5A responsible ML | Challenger backtest, drift monitoring, model card, limitations, approval gates | Independent formulas + production-block assertion | Research-only; no model-risk or production approval |
-| Portfolio release | Recruiter overview, guided walkthrough, responsive dashboard, interview materials | Clean build, accessibility review, CI, public snapshot tests | Local release complete; hosted status recorded separately |
+| Portfolio release | Recruiter overview, guided walkthrough, responsive dashboard, interview materials | Clean build, accessibility review, CI, public snapshot tests | Private hosted release complete; public access not enabled |
 
 No AWS resource or Snowflake object was created in the development environment
 for this revision because credentials, accounts, Terraform, dbt, and boto3 were

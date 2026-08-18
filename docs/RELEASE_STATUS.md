@@ -1,6 +1,6 @@
 # Portfolio release status
 
-Date: 2026-08-17
+Date: 2026-08-18
 
 ## Release-ready locally
 
@@ -13,6 +13,9 @@ Date: 2026-08-17
 - Page metadata and a project-specific social card describe the actual project.
 - Documentation includes architecture, decisions, security, deployment,
   status, walkthrough, and interview material.
+- The release is deployed at
+  `https://governai-poojan-desai.mannered.chatgpt.site` with owner-only access.
+- GitHub Actions passed for the release branch and pull request.
 
 ## External gates
 
@@ -20,7 +23,8 @@ Date: 2026-08-17
 - No customer experiment has been run.
 - No external LLM is called.
 - No model-risk or business-owner approval has occurred.
-- Hosted URL and GitHub release/CI status must be recorded after publishing.
+- Public access is not enabled; changing site access requires an explicit owner
+  decision.
 
 This file is a release record, not permission to change any external status by
 editing documentation. Live states change only from captured execution evidence.

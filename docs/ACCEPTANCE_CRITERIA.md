@@ -92,5 +92,5 @@ run.
 | P6-02 | Guided walkthrough links every evidence chapter | Interactive navigation | VERIFIED LOCALLY |
 | P6-03 | Public evidence excludes raw identifiers and secrets | Privacy/security scans | VERIFIED LOCALLY |
 | P6-04 | Keyboard focus, skip link, labels, and reduced-motion rules exist | Accessibility contracts | VERIFIED LOCALLY |
-| P6-05 | Production build and CI workflow pass | Local build + GitHub Actions | VERIFIED LOCALLY; REMOTE PENDING |
-| P6-06 | Public hosted URL serves the release | Hosting record | NOT RUN |
+| P6-05 | Production build and CI workflow pass | Local build + GitHub Actions | VERIFIED |
+| P6-06 | Hosted URL serves the release | Sites deployment record | PRIVATE DEPLOYED; PUBLIC ACCESS NOT ENABLED |

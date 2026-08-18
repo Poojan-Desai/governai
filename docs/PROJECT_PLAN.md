@@ -8,7 +8,7 @@
 | 3 — Experimentation | Stable assignment, KPI definitions, CIs, significance, impact, ROI | Seeded calculations match independent references | Phase 3A implemented + locally verified; live pilot not run |
 | 4 — Governed analytics assistant | Semantic metrics, fixed SQL, citations, limitations, injection defenses | Adversarial evals and numeric reconciliation | Phase 4A implemented + locally verified; no external LLM |
 | 5 — Responsible ML | Challenger, feature contract, model card, drift monitoring, approvals | Time-based evaluation and hard production block | Phase 5A implemented + locally verified; external approvals not run |
-| 6 — Portfolio release | Recruiter overview, guided demo, responsive UI, metadata, release evidence | Clean build, CI, privacy/security scan, hosted release record | Local release complete; hosting recorded separately |
+| 6 — Portfolio release | Recruiter overview, guided demo, responsive UI, metadata, release evidence | Clean build, CI, privacy/security scan, hosted release record | Private hosted release complete; public access not enabled |
 
 Phase 2 intentionally uses a Python entry point instead of adding Step Functions,
 Glue, Lambda, or containers before a deployed scheduling need exists. A future

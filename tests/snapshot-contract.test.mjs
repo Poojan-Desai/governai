@@ -105,6 +105,6 @@ test("portfolio shell includes recruiter story, accessibility, and social metada
   assert.match(styles,/@media\(prefers-reduced-motion:reduce\)/);
   assert.match(styles,/\.mobile-nav\{justify-content:flex-start;gap:4px;overflow-x:auto/);
   assert.match(index,/GovernAI \| Data & AI Governance Portfolio/);
-  assert.match(index,/property="og:image" content="\/og\.png"/);
+  assert.match(index,/property="og:image" content="https:\/\/governai-poojan-desai\.mannered\.chatgpt\.site\/og\.png"/);
   assert.ok(social.size>100_000);
 });
