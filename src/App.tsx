@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import snapshotJson from "../public/data/demo-snapshot.json";
-import cloudStatusJson from "../public/data/cloud-status.json";
+import snapshotJson from "./data/demo-snapshot.json";
+import cloudStatusJson from "./data/cloud-status.json";
 import type { Asset, CloudStatus, Edge, Snapshot } from "./types";
 
 const data = snapshotJson as Snapshot;

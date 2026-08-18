@@ -16,7 +16,7 @@ def run_demo(root: Path, reset: bool) -> dict[str, object]:
     generated = generate_sources(local / "sources")
     pipeline = LocalPipeline(local / "governai.db"); pipeline.initialize()
     outcomes = pipeline.run_demo(generated.base_dir,generated.incident_file)
-    snapshot_path = root / "public" / "data" / "demo-snapshot.json"
+    snapshot_path = root / "src" / "data" / "demo-snapshot.json"
     snapshot = write_snapshot(local / "governai.db",snapshot_path)
     return {"database":str(local / "governai.db"),"snapshot":str(snapshot_path),"source_hashes":generated.hashes,"runs":{name:{"run_id":r.run_id,"status":r.status,"source_rows":r.source_rows,"accepted_rows":r.accepted_rows,"quarantined_rows":r.quarantined_rows} for name,r in outcomes.items()},"summary":snapshot["summary"]}
 
@@ -24,7 +24,7 @@ def run_demo(root: Path, reset: bool) -> dict[str, object]:
 def write_cloud_status(root: Path) -> dict[str, object]:
     from .cloud.status import write_readiness
 
-    return write_readiness(root, root / "public" / "data" / "cloud-status.json")
+    return write_readiness(root, root / "src" / "data" / "cloud-status.json")
 
 
 def build_live_pipeline(root: Path):
