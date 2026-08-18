@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import worker from "../hosting/worker.js";
+
+const viteConfigPath = new URL("../vite.config.ts", import.meta.url);
 
 const runRequest = async (path, accept = "*/*") => {
   const requestedPaths = [];
@@ -39,4 +42,10 @@ test("bundled assets keep their original paths", async () => {
   const { requestedPaths } = await runRequest("/assets/app.js", "text/javascript");
 
   assert.deepEqual(requestedPaths, ["/assets/app.js"]);
+});
+
+test("Vite emits browser files into the Sites client asset directory", async () => {
+  const viteConfig = await readFile(viteConfigPath, "utf8");
+
+  assert.match(viteConfig, /outDir:\s*["']dist\/client["']/);
 });
