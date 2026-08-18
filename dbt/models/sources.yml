@@ -1,0 +1,43 @@
+version: 2
+
+sources:
+  - name: governai_raw
+    description: Accepted simulated-banking records loaded from immutable S3 validated objects.
+    database: GOVERNAI
+    schema: RAW
+    loaded_at_field: LOADED_AT
+    freshness:
+      warn_after: {count: 25, period: hour}
+      error_after: {count: 49, period: hour}
+    tables:
+      - name: customers
+        identifier: CUSTOMERS
+        columns:
+          - name: CUSTOMER_ID
+            data_tests: [not_null, unique]
+          - name: BATCH_ID
+            data_tests: [not_null]
+          - name: SOURCE_SHA256
+            data_tests: [not_null]
+      - name: accounts
+        identifier: ACCOUNTS
+        columns:
+          - name: ACCOUNT_ID
+            data_tests: [not_null, unique]
+          - name: CUSTOMER_ID
+            data_tests:
+              - relationships:
+                  arguments:
+                    to: source('governai_raw', 'customers')
+                    field: CUSTOMER_ID
+      - name: transactions
+        identifier: TRANSACTIONS
+        columns:
+          - name: TRANSACTION_ID
+            data_tests: [not_null, unique]
+          - name: ACCOUNT_ID
+            data_tests:
+              - relationships:
+                  arguments:
+                    to: source('governai_raw', 'accounts')
+                    field: ACCOUNT_ID

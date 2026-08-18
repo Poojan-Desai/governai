@@ -1,0 +1,29 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: One normalized row per accepted customer, retaining batch and source-hash evidence.
+    columns:
+      - name: customer_id
+        data_tests: [not_null, unique]
+      - name: email
+        description: Direct identifier; Snowflake source masking applies according to the active role.
+  - name: stg_accounts
+    description: One normalized row per accepted card account.
+    columns:
+      - name: account_id
+        data_tests: [not_null, unique]
+      - name: account_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['active', 'restricted']
+  - name: stg_transactions
+    description: Typed transaction view used as the only transaction input to curated models.
+    columns:
+      - name: transaction_id
+        data_tests: [not_null, unique]
+      - name: amount
+        data_tests: [not_null]
+      - name: confirmed_loss
+        data_tests: [not_null]

@@ -1,0 +1,20 @@
+name: governai
+version: 2.0.0
+config-version: 2
+
+profile: governai
+model-paths: ["models"]
+test-paths: ["tests"]
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  governai:
+    staging:
+      +schema: STAGING
+      +materialized: view
+    curated:
+      +schema: CURATED
+      +materialized: table
+    analytics:
+      +schema: ANALYTICS
+      +materialized: table

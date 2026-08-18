@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "governai"
+version = "0.2.0"
+description = "A governed simulated-banking data platform"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+cloud = [
+  "boto3>=1.34,<2",
+  "snowflake-connector-python>=3.12,<4",
+  "dbt-snowflake>=1.10,<2",
+]
+dev = []
+
+[project.scripts]
+governai = "governai.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "backend"}
+
+[tool.setuptools.packages.find]
+where = ["backend"]

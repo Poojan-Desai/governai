@@ -1,0 +1,6 @@
+aws_region = "us-east-1"
+environment = "portfolio"
+
+# Add both only after running DESC INTEGRATION GOVERNAI_S3_INTEGRATION.
+# snowflake_iam_user_arn = "arn:aws:iam::123456789012:user/EXAMPLE"
+# snowflake_external_id  = "EXAMPLE_EXTERNAL_ID"

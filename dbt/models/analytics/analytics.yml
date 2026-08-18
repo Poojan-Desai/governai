@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: mart_monthly_loss_kpis
+    description: Monthly business mart for trusted loss trend reporting; values derive only from accepted transactions.
+    columns:
+      - name: month
+        description: Calendar month in UTC.
+        data_tests: [not_null, unique]
+      - name: transaction_count
+        data_tests: [not_null]
+      - name: transaction_value
+        data_tests: [not_null]
+      - name: confirmed_loss
+        data_tests: [not_null]
+      - name: loss_rate_bps
+        data_tests: [not_null]
+
+exposures:
+  - name: governai_executive_dashboard
+    label: GovernAI evidence dashboard
+    type: dashboard
+    maturity: medium
+    url: https://github.com/OWNER/governai
+    description: Recruiter-facing dashboard backed by the governed monthly KPI mart after a verified cloud run.
+    depends_on:
+      - ref('mart_monthly_loss_kpis')
+    owner:
+      name: GovernAI project owner
+      email: owner@example.test

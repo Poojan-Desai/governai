@@ -1,0 +1,37 @@
+version: 2
+
+models:
+  - name: dim_customer
+    description: Governed customer dimension with deterministic tokenization and masked email.
+    columns:
+      - name: customer_token
+        data_tests: [not_null, unique]
+      - name: customer_id
+        data_tests: [not_null, unique]
+  - name: dim_account
+    description: Account dimension joined to a customer token instead of direct customer PII.
+    columns:
+      - name: account_id
+        data_tests: [not_null, unique]
+      - name: customer_token
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_token
+  - name: fct_card_transactions
+    description: Governed transaction fact table with source batch and SHA-256 lineage columns.
+    columns:
+      - name: transaction_id
+        data_tests: [not_null, unique]
+      - name: account_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_account')
+                field: account_id
+  - name: feature_account_behavior_30d
+    description: Explainable account-level behavioral features anchored to the latest governed transaction date.
+    columns:
+      - name: account_id
+        data_tests: [not_null, unique]

@@ -1,0 +1,36 @@
+{
+  "name": "governai",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "lint": "eslint .",
+    "test:web": "node --test tests/snapshot-contract.test.mjs",
+    "test:python": "PYTHONPATH=backend python3 -m unittest discover -s backend/tests -v",
+    "test": "npm run test:python && npm run test:web && npm run lint && npm run build",
+    "demo": "PYTHONPATH=backend python3 -m governai.cli demo --project-root . --reset",
+    "cloud:status": "PYTHONPATH=backend python3 -m governai.cli cloud-status --project-root .",
+    "cloud:run": "PYTHONPATH=backend python3 -m governai.cli cloud-run --project-root .",
+    "cloud:incident": "PYTHONPATH=backend python3 -m governai.cli cloud-incident --project-root ."
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest",
+    "typescript": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "@eslint/js": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "eslint": "latest",
+    "eslint-plugin-react-hooks": "latest",
+    "eslint-plugin-react-refresh": "latest",
+    "globals": "latest",
+    "typescript-eslint": "latest"
+  }
+}

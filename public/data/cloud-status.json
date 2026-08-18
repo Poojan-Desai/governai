@@ -1,0 +1,92 @@
+{
+  "schema_version": "2.0",
+  "generated_at": "2026-08-10T19:53:13.726870+00:00",
+  "phase": "Phase 2",
+  "implementation_status": "IMPLEMENTED_LOCALLY",
+  "live_verification_status": "NOT_RUN",
+  "truth_notice": "No AWS/Snowflake deployment is claimed unless a live run report exists and all reconciliations match.",
+  "credentials": {
+    "aws_configured": false,
+    "snowflake_configured": false,
+    "values_exposed": false
+  },
+  "tools": {
+    "terraform": false,
+    "dbt": false,
+    "aws_cli": false,
+    "snowflake_connector": false,
+    "boto3": false
+  },
+  "artifacts": {
+    "terraform": true,
+    "dbt_project": true,
+    "snowflake_bootstrap": true,
+    "cloud_orchestrator": true
+  },
+  "s3_zones": [
+    {
+      "name": "raw",
+      "purpose": "Immutable source files and canonical manifests"
+    },
+    {
+      "name": "validated",
+      "purpose": "Contract-approved source files only"
+    },
+    {
+      "name": "quarantined",
+      "purpose": "Blocked files and rule evidence"
+    },
+    {
+      "name": "curated",
+      "purpose": "Optional governed exports from Snowflake marts"
+    }
+  ],
+  "snowflake_layers": [
+    "RAW",
+    "STAGING",
+    "CURATED",
+    "ANALYTICS",
+    "GOVERNANCE"
+  ],
+  "rbac_roles": [
+    "GOVAI_DATA_ENGINEER",
+    "GOVAI_ANALYST",
+    "GOVAI_GOVERNANCE_ADMIN",
+    "GOVAI_RESTRICTED_ANALYST",
+    "GOVAI_PIPELINE_ROLE",
+    "GOVAI_DBT_ROLE"
+  ],
+  "cloud_lineage": [
+    {
+      "from": "Generated CSV + manifest",
+      "to": "S3 raw",
+      "status": "DEFINED_NOT_EXECUTED"
+    },
+    {
+      "from": "S3 raw",
+      "to": "Quality contract",
+      "status": "VERIFIED_LOCALLY"
+    },
+    {
+      "from": "Quality contract",
+      "to": "S3 validated/quarantined",
+      "status": "DEFINED_NOT_EXECUTED"
+    },
+    {
+      "from": "S3 validated",
+      "to": "Snowflake RAW",
+      "status": "DEFINED_NOT_EXECUTED"
+    },
+    {
+      "from": "Snowflake RAW",
+      "to": "dbt STAGING/CURATED/ANALYTICS",
+      "status": "DEFINED_NOT_EXECUTED"
+    },
+    {
+      "from": "Snowflake audit",
+      "to": "Reconciliation evidence",
+      "status": "DEFINED_NOT_EXECUTED"
+    }
+  ],
+  "latest_live_run": null
+}

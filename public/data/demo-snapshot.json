@@ -1,0 +1,591 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-08-10T19:53:13.674857+00:00",
+  "environment": "local-verified",
+  "data_notice": "Deterministic simulated banking data; no real customers or bank systems.",
+  "summary": {
+    "governed_assets": 13,
+    "quality_checks": 17,
+    "quality_checks_passed": 13,
+    "classified_columns": 12,
+    "direct_identifier_columns": 3,
+    "accepted_transactions": 3600,
+    "quarantined_batches": 1,
+    "protected_downstream_assets": 6
+  },
+  "freshness": {
+    "last_good_run_id": "run-4f8aaf0b40934cf4",
+    "last_good_run_at": "2026-08-10T19:53:13.662522+00:00",
+    "source_sha256": "c21d3095258f60c8ef9b9917b87debe69e9c99139bfd717dc83ef933fb267ea1",
+    "snapshot_generated_at": "2026-08-10T19:53:13.674857+00:00",
+    "sla": "2 hours"
+  },
+  "incident": {
+    "incident_id": "DQ-2026-001",
+    "title": "Corrupted August transaction batch",
+    "run_id": "run-15fd19041cac4682",
+    "source_asset_id": "source.card_transactions",
+    "source_file": "transactions_corrupt.csv",
+    "source_sha256": "c5d2b71845112fbbd1cf627d05c3b24dc6905405e57de2921b10a030bbd9a5a8",
+    "status": "quarantined",
+    "policy": "FAIL_CLOSED_FILE_ATOMIC_V1",
+    "source_rows": 120,
+    "accepted_rows": 0,
+    "quarantined_rows": 120,
+    "critical_violation_count": 4,
+    "warehouse_rows_before": 3600,
+    "warehouse_rows_after": 3600,
+    "contamination_prevented": true,
+    "failed_checks": [
+      {
+        "rule_id": "transaction_id_unique",
+        "description": "Transaction ID is unique within the batch",
+        "severity": "critical",
+        "passed": 0,
+        "failed_rows": 1,
+        "observed_value": "1 failing rows",
+        "expected_value": "0 duplicate IDs"
+      },
+      {
+        "rule_id": "transaction_amount_positive",
+        "description": "Transaction amount is positive",
+        "severity": "critical",
+        "passed": 0,
+        "failed_rows": 1,
+        "observed_value": "1 failing rows",
+        "expected_value": "Every amount > 0"
+      },
+      {
+        "rule_id": "transaction_account_fk",
+        "description": "Every transaction references a known account",
+        "severity": "critical",
+        "passed": 0,
+        "failed_rows": 1,
+        "observed_value": "1 failing rows",
+        "expected_value": "0 orphan transactions"
+      },
+      {
+        "rule_id": "transaction_timestamp_valid",
+        "description": "Transaction timestamp is ISO-8601",
+        "severity": "critical",
+        "passed": 0,
+        "failed_rows": 1,
+        "observed_value": "1 failing rows",
+        "expected_value": "Every timestamp parses as ISO-8601"
+      }
+    ],
+    "impacted_asset_ids": [
+      "validated.card_transactions",
+      "curated.fct_card_transactions",
+      "feature.account_behavior_30d",
+      "mart.monthly_loss_kpis",
+      "model.loss_forecast_v1",
+      "dashboard.risk_operations"
+    ],
+    "explanation": "A critical contract failed, so the complete file was quarantined before the warehouse transaction began."
+  },
+  "monthly_kpis": [
+    {
+      "month": "2026-02",
+      "transaction_count": 600,
+      "transaction_value": 36595.66,
+      "confirmed_loss": 376.05,
+      "loss_rate_bps": 102.76,
+      "affected_transactions": 4
+    },
+    {
+      "month": "2026-03",
+      "transaction_count": 600,
+      "transaction_value": 32613.43,
+      "confirmed_loss": 208.63,
+      "loss_rate_bps": 63.97,
+      "affected_transactions": 7
+    },
+    {
+      "month": "2026-04",
+      "transaction_count": 600,
+      "transaction_value": 33523.82,
+      "confirmed_loss": 387.01,
+      "loss_rate_bps": 115.44,
+      "affected_transactions": 9
+    },
+    {
+      "month": "2026-05",
+      "transaction_count": 600,
+      "transaction_value": 32667.54,
+      "confirmed_loss": 363.37,
+      "loss_rate_bps": 111.23,
+      "affected_transactions": 9
+    },
+    {
+      "month": "2026-06",
+      "transaction_count": 600,
+      "transaction_value": 33807.83,
+      "confirmed_loss": 168.22,
+      "loss_rate_bps": 49.76,
+      "affected_transactions": 6
+    },
+    {
+      "month": "2026-07",
+      "transaction_count": 600,
+      "transaction_value": 32941.36,
+      "confirmed_loss": 405.69,
+      "loss_rate_bps": 123.16,
+      "affected_transactions": 10
+    }
+  ],
+  "forecast": {
+    "forecast_month": "2026-08",
+    "model_version": "ols-loss-v1",
+    "method": "ordinary_least_squares",
+    "predicted_loss": 318.49,
+    "slope": 0.095143,
+    "intercept": 317.92381,
+    "training_points": 6,
+    "trained_at": "2026-08-10T19:53:13.662461+00:00"
+  },
+  "assets": [
+    {
+      "asset_id": "curated.dim_account",
+      "display_name": "Account dimension",
+      "asset_type": "table",
+      "layer": "curated",
+      "owner": "Card Analytics",
+      "sensitivity": "confidential",
+      "freshness_sla": "24 hours",
+      "description": "Conformed account dimension joined to customer tokens.",
+      "physical_name": "dim_account",
+      "status": "active",
+      "row_count": 320,
+      "incident_impact": false,
+      "protected": false
+    },
+    {
+      "asset_id": "curated.dim_customer",
+      "display_name": "Customer dimension",
+      "asset_type": "table",
+      "layer": "curated",
+      "owner": "Customer Analytics",
+      "sensitivity": "confidential",
+      "freshness_sla": "24 hours",
+      "description": "Tokenized customer dimension with masked email.",
+      "physical_name": "dim_customer",
+      "status": "active",
+      "row_count": 240,
+      "incident_impact": false,
+      "protected": false
+    },
+    {
+      "asset_id": "curated.fct_card_transactions",
+      "display_name": "Card transaction fact",
+      "asset_type": "table",
+      "layer": "curated",
+      "owner": "Payments Analytics",
+      "sensitivity": "confidential",
+      "freshness_sla": "2 hours",
+      "description": "Accepted card transactions at transaction grain.",
+      "physical_name": "fct_card_transactions",
+      "status": "active",
+      "row_count": 3600,
+      "incident_impact": true,
+      "protected": true
+    },
+    {
+      "asset_id": "dashboard.risk_operations",
+      "display_name": "Risk operations dashboard",
+      "asset_type": "dashboard",
+      "layer": "consumption",
+      "owner": "Risk Operations",
+      "sensitivity": "internal",
+      "freshness_sla": "24 hours",
+      "description": "Governed operational view of pipeline trust and loss trends.",
+      "physical_name": null,
+      "status": "active",
+      "row_count": null,
+      "incident_impact": true,
+      "protected": true
+    },
+    {
+      "asset_id": "feature.account_behavior_30d",
+      "display_name": "30-day account behavior",
+      "asset_type": "feature_set",
+      "layer": "product",
+      "owner": "Applied Analytics",
+      "sensitivity": "confidential",
+      "freshness_sla": "24 hours",
+      "description": "Transparent rolling account aggregates used by analytical models.",
+      "physical_name": "feature_account_behavior_30d",
+      "status": "active",
+      "row_count": 268,
+      "incident_impact": true,
+      "protected": true
+    },
+    {
+      "asset_id": "mart.monthly_loss_kpis",
+      "display_name": "Monthly loss KPI mart",
+      "asset_type": "mart",
+      "layer": "product",
+      "owner": "Risk Strategy",
+      "sensitivity": "internal",
+      "freshness_sla": "24 hours",
+      "description": "Monthly transaction value, confirmed loss, rate, and affected count.",
+      "physical_name": "mart_monthly_loss_kpis",
+      "status": "active",
+      "row_count": 6,
+      "incident_impact": true,
+      "protected": true
+    },
+    {
+      "asset_id": "model.loss_forecast_v1",
+      "display_name": "Monthly loss forecast v1",
+      "asset_type": "model",
+      "layer": "model",
+      "owner": "Risk Strategy",
+      "sensitivity": "internal",
+      "freshness_sla": "24 hours",
+      "description": "Transparent OLS baseline trained on the monthly KPI mart.",
+      "physical_name": "model_loss_forecast",
+      "status": "active",
+      "row_count": 1,
+      "incident_impact": true,
+      "protected": true
+    },
+    {
+      "asset_id": "source.card_accounts",
+      "display_name": "Card account extract",
+      "asset_type": "dataset",
+      "layer": "source",
+      "owner": "Card Data",
+      "sensitivity": "confidential",
+      "freshness_sla": "24 hours",
+      "description": "Synthetic card-account master source.",
+      "physical_name": null,
+      "status": "active",
+      "row_count": null,
+      "incident_impact": false,
+      "protected": false
+    },
+    {
+      "asset_id": "source.card_transactions",
+      "display_name": "Card transaction extract",
+      "asset_type": "dataset",
+      "layer": "source",
+      "owner": "Payments Data",
+      "sensitivity": "confidential",
+      "freshness_sla": "2 hours",
+      "description": "Synthetic posted card transactions and confirmed loss outcomes.",
+      "physical_name": null,
+      "status": "active",
+      "row_count": null,
+      "incident_impact": false,
+      "protected": false
+    },
+    {
+      "asset_id": "source.crm_customers",
+      "display_name": "CRM customer extract",
+      "asset_type": "dataset",
+      "layer": "source",
+      "owner": "Customer Data",
+      "sensitivity": "restricted",
+      "freshness_sla": "24 hours",
+      "description": "Synthetic customer profile source containing direct identifiers.",
+      "physical_name": null,
+      "status": "active",
+      "row_count": null,
+      "incident_impact": false,
+      "protected": false
+    },
+    {
+      "asset_id": "validated.card_accounts",
+      "display_name": "Validated card accounts",
+      "asset_type": "dataset",
+      "layer": "validated",
+      "owner": "Card Data",
+      "sensitivity": "confidential",
+      "freshness_sla": "24 hours",
+      "description": "Contract-approved card-account records.",
+      "physical_name": "raw_accounts",
+      "status": "active",
+      "row_count": 320,
+      "incident_impact": false,
+      "protected": false
+    },
+    {
+      "asset_id": "validated.card_transactions",
+      "display_name": "Validated card transactions",
+      "asset_type": "dataset",
+      "layer": "validated",
+      "owner": "Payments Data",
+      "sensitivity": "confidential",
+      "freshness_sla": "2 hours",
+      "description": "Contract-approved transaction records.",
+      "physical_name": "raw_transactions",
+      "status": "active",
+      "row_count": 3600,
+      "incident_impact": true,
+      "protected": true
+    },
+    {
+      "asset_id": "validated.customer_profiles",
+      "display_name": "Validated customer profiles",
+      "asset_type": "dataset",
+      "layer": "validated",
+      "owner": "Customer Data",
+      "sensitivity": "restricted",
+      "freshness_sla": "24 hours",
+      "description": "Contract-approved customer profile records.",
+      "physical_name": "raw_customers",
+      "status": "active",
+      "row_count": 240,
+      "incident_impact": false,
+      "protected": false
+    }
+  ],
+  "lineage_edges": [
+    {
+      "edge_id": "e01",
+      "upstream_asset_id": "source.crm_customers",
+      "downstream_asset_id": "validated.customer_profiles",
+      "transformation_type": "quality_gate",
+      "transformation_description": "Validate IDs, unique keys, ISO dates, and reserved synthetic email domain."
+    },
+    {
+      "edge_id": "e02",
+      "upstream_asset_id": "source.card_accounts",
+      "downstream_asset_id": "validated.card_accounts",
+      "transformation_type": "quality_gate",
+      "transformation_description": "Validate account keys, customer referential integrity, and positive limits."
+    },
+    {
+      "edge_id": "e03",
+      "upstream_asset_id": "source.card_transactions",
+      "downstream_asset_id": "validated.card_transactions",
+      "transformation_type": "quality_gate",
+      "transformation_description": "Validate transaction keys, positive amounts, account references, timestamps, and bounded losses."
+    },
+    {
+      "edge_id": "e04",
+      "upstream_asset_id": "validated.customer_profiles",
+      "downstream_asset_id": "curated.dim_customer",
+      "transformation_type": "sql_transform",
+      "transformation_description": "Tokenize customer ID and mask email before analytical use."
+    },
+    {
+      "edge_id": "e05",
+      "upstream_asset_id": "validated.card_accounts",
+      "downstream_asset_id": "curated.dim_account",
+      "transformation_type": "sql_transform",
+      "transformation_description": "Join accounts to tokenized customers and conform account attributes."
+    },
+    {
+      "edge_id": "e06",
+      "upstream_asset_id": "curated.dim_account",
+      "downstream_asset_id": "curated.fct_card_transactions",
+      "transformation_type": "sql_transform",
+      "transformation_description": "Enforce conformed-account join and derive calendar and cross-border fields."
+    },
+    {
+      "edge_id": "e07",
+      "upstream_asset_id": "validated.card_transactions",
+      "downstream_asset_id": "curated.fct_card_transactions",
+      "transformation_type": "sql_transform",
+      "transformation_description": "Publish approved transactions at one-row-per-transaction grain."
+    },
+    {
+      "edge_id": "e08",
+      "upstream_asset_id": "curated.fct_card_transactions",
+      "downstream_asset_id": "feature.account_behavior_30d",
+      "transformation_type": "sql_aggregate",
+      "transformation_description": "Aggregate 30-day count, average amount, cross-border rate, and confirmed loss by account."
+    },
+    {
+      "edge_id": "e09",
+      "upstream_asset_id": "curated.fct_card_transactions",
+      "downstream_asset_id": "mart.monthly_loss_kpis",
+      "transformation_type": "sql_aggregate",
+      "transformation_description": "Aggregate monthly value, confirmed loss, rate, and affected transaction count."
+    },
+    {
+      "edge_id": "e10",
+      "upstream_asset_id": "mart.monthly_loss_kpis",
+      "downstream_asset_id": "model.loss_forecast_v1",
+      "transformation_type": "model_training",
+      "transformation_description": "Fit a versioned ordinary-least-squares baseline to monthly confirmed loss."
+    },
+    {
+      "edge_id": "e11",
+      "upstream_asset_id": "feature.account_behavior_30d",
+      "downstream_asset_id": "model.loss_forecast_v1",
+      "transformation_type": "model_context",
+      "transformation_description": "Register governed contextual features for later challenger analysis."
+    },
+    {
+      "edge_id": "e12",
+      "upstream_asset_id": "mart.monthly_loss_kpis",
+      "downstream_asset_id": "dashboard.risk_operations",
+      "transformation_type": "dashboard_query",
+      "transformation_description": "Render governed monthly KPI aggregates."
+    },
+    {
+      "edge_id": "e13",
+      "upstream_asset_id": "model.loss_forecast_v1",
+      "downstream_asset_id": "dashboard.risk_operations",
+      "transformation_type": "dashboard_query",
+      "transformation_description": "Render forecast value, method, training count, and limitations."
+    }
+  ],
+  "column_classifications": [
+    {
+      "asset_id": "curated.dim_customer",
+      "column_name": "customer_token",
+      "data_type": "TEXT",
+      "classification": "PSEUDONYMOUS_IDENTIFIER",
+      "taxonomy_term_id": "customer",
+      "masking_policy": "already_tokenized",
+      "description": "Stable local customer token."
+    },
+    {
+      "asset_id": "curated.dim_customer",
+      "column_name": "masked_email",
+      "data_type": "TEXT",
+      "classification": "MASKED_IDENTIFIER",
+      "taxonomy_term_id": "customer",
+      "masking_policy": "already_masked",
+      "description": "Masked synthetic email."
+    },
+    {
+      "asset_id": "mart.monthly_loss_kpis",
+      "column_name": "confirmed_loss",
+      "data_type": "REAL",
+      "classification": "SENSITIVE_DERIVED",
+      "taxonomy_term_id": "loss",
+      "masking_policy": "aggregate_only",
+      "description": "Monthly aggregate confirmed loss."
+    },
+    {
+      "asset_id": "source.card_accounts",
+      "column_name": "account_id",
+      "data_type": "TEXT",
+      "classification": "INTERNAL_IDENTIFIER",
+      "taxonomy_term_id": "account",
+      "masking_policy": "role_scoped",
+      "description": "Synthetic account business key."
+    },
+    {
+      "asset_id": "source.card_accounts",
+      "column_name": "credit_limit",
+      "data_type": "REAL",
+      "classification": "FINANCIAL",
+      "taxonomy_term_id": "account",
+      "masking_policy": "aggregate_only",
+      "description": "Synthetic account credit limit."
+    },
+    {
+      "asset_id": "source.card_transactions",
+      "column_name": "amount",
+      "data_type": "REAL",
+      "classification": "FINANCIAL",
+      "taxonomy_term_id": "payment",
+      "masking_policy": "aggregate_only",
+      "description": "Synthetic posted amount."
+    },
+    {
+      "asset_id": "source.card_transactions",
+      "column_name": "confirmed_loss",
+      "data_type": "REAL",
+      "classification": "SENSITIVE_DERIVED",
+      "taxonomy_term_id": "loss",
+      "masking_policy": "aggregate_only",
+      "description": "Synthetic confirmed loss outcome."
+    },
+    {
+      "asset_id": "source.card_transactions",
+      "column_name": "transaction_id",
+      "data_type": "TEXT",
+      "classification": "INTERNAL_IDENTIFIER",
+      "taxonomy_term_id": "payment",
+      "masking_policy": "role_scoped",
+      "description": "Synthetic transaction business key."
+    },
+    {
+      "asset_id": "source.crm_customers",
+      "column_name": "customer_id",
+      "data_type": "TEXT",
+      "classification": "INTERNAL_IDENTIFIER",
+      "taxonomy_term_id": "customer",
+      "masking_policy": "tokenize_sha256",
+      "description": "Synthetic customer business key."
+    },
+    {
+      "asset_id": "source.crm_customers",
+      "column_name": "email",
+      "data_type": "TEXT",
+      "classification": "DIRECT_IDENTIFIER",
+      "taxonomy_term_id": "customer",
+      "masking_policy": "mask_email",
+      "description": "Synthetic reserved-domain email."
+    },
+    {
+      "asset_id": "source.crm_customers",
+      "column_name": "full_name",
+      "data_type": "TEXT",
+      "classification": "DIRECT_IDENTIFIER",
+      "taxonomy_term_id": "customer",
+      "masking_policy": "restricted_raw_only",
+      "description": "Synthetic full name."
+    },
+    {
+      "asset_id": "source.crm_customers",
+      "column_name": "phone",
+      "data_type": "TEXT",
+      "classification": "DIRECT_IDENTIFIER",
+      "taxonomy_term_id": "customer",
+      "masking_policy": "restricted_raw_only",
+      "description": "Synthetic 555 phone number."
+    }
+  ],
+  "audit_events": [
+    {
+      "event_id": "event-1c8a35ef0f5a4b34",
+      "event_ts": "2026-08-10T19:53:13.670947+00:00",
+      "actor": "system:pipeline",
+      "action": "batch.quarantined",
+      "resource_id": "source.card_transactions",
+      "run_id": "run-15fd19041cac4682",
+      "outcome": "blocked"
+    },
+    {
+      "event_id": "event-3050e436ce034820",
+      "event_ts": "2026-08-10T19:53:13.662585+00:00",
+      "actor": "system:pipeline",
+      "action": "batch.published",
+      "resource_id": "validated.card_transactions",
+      "run_id": "run-4f8aaf0b40934cf4",
+      "outcome": "succeeded"
+    },
+    {
+      "event_id": "event-331d9cf9397b4098",
+      "event_ts": "2026-08-10T19:53:13.628811+00:00",
+      "actor": "system:pipeline",
+      "action": "batch.published",
+      "resource_id": "validated.card_accounts",
+      "run_id": "run-4ef55f826ca84b84",
+      "outcome": "succeeded"
+    },
+    {
+      "event_id": "event-653072052f144fc0",
+      "event_ts": "2026-08-10T19:53:13.608158+00:00",
+      "actor": "system:pipeline",
+      "action": "batch.published",
+      "resource_id": "validated.customer_profiles",
+      "run_id": "run-517642e9135a47f2",
+      "outcome": "succeeded"
+    }
+  ],
+  "limitations": [
+    "All banking records and outcomes are simulated.",
+    "The OLS forecast uses six monthly observations and is a lineage demonstration, not a production forecast.",
+    "Phase 1 uses SQLite locally; AWS and Snowflake adapters are planned and not claimed as implemented.",
+    "The governed natural-language analytics assistant is deferred until its policy and evaluation gates exist."
+  ]
+}
