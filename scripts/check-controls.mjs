@@ -1,0 +1,40 @@
+import { chromium } from "playwright";
+import fs from "node:fs";
+import path from "node:path";
+const output=process.env.BROWSER_EVIDENCE_DIR||".local/browser-controls";
+fs.mkdirSync(output,{recursive:true});
+import assert from "node:assert/strict";
+(async()=>{
+ const browser=await chromium.launch({headless:true,channel:process.env.PLAYWRIGHT_CHANNEL||undefined});
+ const page=await browser.newPage({viewport:{width:1440,height:1100}});
+ const errors=[];page.on('pageerror',error=>errors.push(String(error)));
+ await page.goto(process.env.BASE_URL||'http://127.0.0.1:5173/');
+ await page.locator('.sidebar nav').getByRole('button',{name:/Control evidence/}).click();
+ assert.equal(await page.getByRole('heading',{name:'Control evidence',exact:true}).count(),1);
+ assert.equal(await page.getByText('7 of 7 controls passed').count(),1);
+ const controls=page.locator('.controls-list button'); assert.equal(await controls.count(),7);
+ for(let i=0;i<7;i++){
+  await controls.nth(i).click();
+  const objective=await controls.nth(i).locator('b').innerText();
+  assert.equal(await page.locator('.control-detail h2').first().innerText(),objective);
+ }
+ await controls.first().click();
+ await page.screenshot({path:path.join(output,"control-evidence-desktop.png"),fullPage:true});
+ const downloadEvent=page.waitForEvent('download');
+ await page.getByRole('button',{name:'Download evidence JSON'}).click();
+ const download=await downloadEvent;await download.saveAs(path.join(output,"ui-downloaded-evidence.json"));
+ const downloaded=JSON.parse(fs.readFileSync(path.join(output,"ui-downloaded-evidence.json"),'utf8'));
+ const original=JSON.parse(fs.readFileSync('src/data/control-evidence.json','utf8'));
+ assert.deepEqual(downloaded,original);
+ await page.setViewportSize({width:390,height:844});
+ await page.locator('.mobile-nav').getByRole('button',{name:'Control evidence',exact:true}).click();
+ const sizes=await page.evaluate(()=>({scroll:globalThis.document.documentElement.scrollWidth,width:globalThis.innerWidth}));
+ assert.ok(sizes.scroll<=sizes.width,JSON.stringify(sizes));
+ await page.screenshot({path:path.join(output,"control-evidence-mobile.png"),fullPage:true});
+ await page.getByRole('button',{name:'Download evidence JSON'}).focus();
+ const focused=await page.getByRole('button',{name:'Download evidence JSON'}).evaluate(el=>el===globalThis.document.activeElement);assert.ok(focused);
+ assert.deepEqual(errors,[]);
+ fs.writeFileSync(path.join(output,"browser-report.json"),JSON.stringify({desktop:{width:1440,height:1100},mobile:{width:390,height:844},control_selection_checks:7,download_matches_source:true,mobile_no_horizontal_overflow:true,keyboard_button_focus:true,page_errors:errors},null,2)+'\n');
+ console.log('PASS: seven control selections, download/source equality, desktop/mobile layout, keyboard focus, no page errors.');
+ await browser.close();
+})().catch(error=>{console.error(error);process.exit(1)});

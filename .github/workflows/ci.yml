@@ -15,6 +15,7 @@ jobs:
       - run: make demo
       - run: make cloud-status
       - run: make test-python
+      - run: PYTHONPATH=backend python3 -m governai.cli controls --output .local/control-evidence.json
       - run: npm ci
       - run: npm run test:web
       - run: npm run lint

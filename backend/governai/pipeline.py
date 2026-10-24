@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import io
 import json
 import sqlite3
 import uuid
@@ -15,11 +16,18 @@ from typing import Callable, Iterator, Mapping, Sequence
 
 from .catalog import bootstrap_catalog, downstream_assets
 from .contracts import CheckResult, has_critical_failure, result, validate_accounts, validate_customers, validate_transactions
-from .generator import sha256_file
 
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+@dataclass(frozen=True)
+class SourceSnapshot:
+    rows: tuple[dict[str, str], ...]
+    columns: tuple[str, ...]
+    sha256: str
+    byte_size: int
 
 
 @dataclass(frozen=True)
@@ -72,16 +80,22 @@ class LocalPipeline:
             bootstrap_catalog(connection)
 
     @staticmethod
+    def read_source(path: Path) -> "SourceSnapshot":
+        # Parse, hash and measure the same captured bytes. A later filesystem
+        # replacement must not rewrite the provenance of already parsed rows.
+        payload = Path(path).read_bytes()
+        reader = csv.DictReader(io.StringIO(payload.decode("utf-8"), newline=""))
+        return SourceSnapshot(tuple(reader), tuple(reader.fieldnames or ()),
+                              hashlib.sha256(payload).hexdigest(), len(payload))
+
+    @staticmethod
     def read_csv(path: Path) -> list[dict[str, str]]:
-        rows, _ = LocalPipeline.read_csv_with_columns(path)
-        return rows
+        return list(LocalPipeline.read_source(path).rows)
 
     @staticmethod
     def read_csv_with_columns(path: Path) -> tuple[list[dict[str, str]], tuple[str, ...]]:
-        with path.open("r", encoding="utf-8", newline="") as handle:
-            reader = csv.DictReader(handle)
-            rows = list(reader)
-            return rows, tuple(reader.fieldnames or ())
+        source = LocalPipeline.read_source(path)
+        return list(source.rows), source.columns
 
     @staticmethod
     def batch_id(asset_id: str, source_hash: str, label: str) -> str:
@@ -105,18 +119,18 @@ class LocalPipeline:
         return RunOutcome(row["run_id"], row["batch_id"], row["asset_id"], row["status"], row["source_row_count"], row["accepted_row_count"], row["quarantined_row_count"], row["source_sha256"], checks, impacted)
 
     def ingest_customers(self, path: Path, label: str = "base") -> RunOutcome:
-        rows, columns = self.read_csv_with_columns(path)
-        return self.ingest("source.crm_customers", "validated.customer_profiles", path, label, rows, validate_customers(rows, columns=columns), self.load_customers)
+        source = self.read_source(path)
+        return self.ingest("source.crm_customers", "validated.customer_profiles", path, label, source, validate_customers(source.rows, columns=source.columns), self.load_customers)
 
     def ingest_accounts(self, path: Path, label: str = "base") -> RunOutcome:
-        rows, columns = self.read_csv_with_columns(path)
-        checks = validate_accounts(rows, self.known_ids("raw_customers", "customer_id"), columns=columns)
-        return self.ingest("source.card_accounts", "validated.card_accounts", path, label, rows, checks, self.load_accounts)
+        source = self.read_source(path)
+        checks = validate_accounts(source.rows, self.known_ids("raw_customers", "customer_id"), columns=source.columns)
+        return self.ingest("source.card_accounts", "validated.card_accounts", path, label, source, checks, self.load_accounts)
 
     def ingest_transactions(self, path: Path, label: str = "base") -> RunOutcome:
-        rows, columns = self.read_csv_with_columns(path)
-        checks = validate_transactions(rows, self.known_ids("raw_accounts", "account_id"), columns=columns)
-        return self.ingest("source.card_transactions", "validated.card_transactions", path, label, rows, checks, self.load_transactions)
+        source = self.read_source(path)
+        checks = validate_transactions(source.rows, self.known_ids("raw_accounts", "account_id"), columns=source.columns)
+        return self.ingest("source.card_transactions", "validated.card_transactions", path, label, source, checks, self.load_transactions)
 
     @staticmethod
     def transaction_replay_check(connection: sqlite3.Connection, rows: Sequence[Mapping[str, str]]) -> CheckResult:
@@ -137,8 +151,8 @@ class LocalPipeline:
             "0 rows with previously published transaction IDs; replay the original batch identity for idempotency",
         )
 
-    def ingest(self, asset_id: str, validated_id: str, path: Path, label: str, rows: Sequence[Mapping[str, str]], checks: Sequence[CheckResult], loader: Callable[[sqlite3.Connection, Sequence[Mapping[str, str]], str], None]) -> RunOutcome:
-        source_hash = sha256_file(path)
+    def ingest(self, asset_id: str, validated_id: str, path: Path, label: str, source: SourceSnapshot, checks: Sequence[CheckResult], loader: Callable[[sqlite3.Connection, Sequence[Mapping[str, str]], str], None]) -> RunOutcome:
+        rows, source_hash = source.rows, source.sha256
         batch_id = self.batch_id(asset_id, source_hash, label)
         failure: PipelineExecutionError | None = None
         cause: Exception | None = None
@@ -155,7 +169,7 @@ class LocalPipeline:
                 checks = [*checks, self.transaction_replay_check(connection, rows)]
             run_id, started = f"run-{uuid.uuid4().hex[:16]}", utc_now()
             connection.execute("INSERT INTO pipeline_runs(run_id,pipeline_name,batch_id,asset_id,source_path,source_sha256,started_at,status,source_row_count) VALUES(?,'governed_batch_ingestion',?,?,?,?,?,'running',?)", (run_id,batch_id,asset_id,path.name,source_hash,started,len(rows)))
-            connection.execute("INSERT INTO source_manifests VALUES(?,?,?,?,?,?,?,?)", (f"manifest-{uuid.uuid4().hex[:16]}",run_id,asset_id,path.name,source_hash,path.stat().st_size,len(rows),started))
+            connection.execute("INSERT INTO source_manifests VALUES(?,?,?,?,?,?,?,?)", (f"manifest-{uuid.uuid4().hex[:16]}",run_id,asset_id,path.name,source_hash,source.byte_size,len(rows),started))
             connection.executemany("INSERT INTO quality_results(run_id,asset_id,rule_id,description,severity,passed,failed_rows,observed_value,expected_value) VALUES(?,?,?,?,?,?,?,?,?)", [(run_id,asset_id,c.rule_id,c.description,c.severity,int(c.passed),c.failed_rows,c.observed_value,c.expected_value) for c in checks])
             if has_critical_failure(checks):
                 ended, impacted = utc_now(), tuple(downstream_assets(connection, asset_id))

@@ -108,3 +108,14 @@ test("portfolio shell includes recruiter story, accessibility, and social metada
   assert.match(index,/property="og:image" content="https:\/\/governai-poojan-desai\.netlify\.app\/og\.png"/);
   assert.ok(social.size>100_000);
 });
+
+test("control evidence exports executed procedures with source provenance and scope", async () => {
+  const report=JSON.parse(await readFile(new URL("../src/data/control-evidence.json", import.meta.url),"utf8"));
+  assert.equal(report.schema_version,"governai-controls/v1");
+  assert.equal(report.environment,"isolated-local-synthetic");
+  assert.equal(report.summary.executed,report.controls.length);
+  assert.equal(report.summary.passed,report.controls.filter(c=>c.result==="PASS").length);
+  assert.ok(report.controls.some(c=>c.control_id==="REL-001"&&c.observations.mart_preserved));
+  assert.ok(report.source_evidence.every(s=>/^[a-f0-9]{64}$/.test(s.sha256)&&s.byte_size>0));
+  assert.doesNotMatch(JSON.stringify(report),/customer\d+@|\+1-555-|ACC-\d+/);
+});

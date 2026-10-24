@@ -1,17 +1,19 @@
 import { useMemo, useState } from "react";
 import snapshotJson from "./data/demo-snapshot.json";
 import cloudStatusJson from "./data/cloud-status.json";
+import controlEvidence from "./data/control-evidence.json";
 import type { Asset, CloudStatus, Edge, Snapshot } from "./types";
 
 const data = snapshotJson as Snapshot;
 const cloud = cloudStatusJson as CloudStatus;
-type View = "overview"|"incident"|"lineage"|"catalog"|"experiment"|"assistant"|"model"|"cloud";
+type View = "overview"|"incident"|"lineage"|"catalog"|"experiment"|"assistant"|"model"|"cloud"|"controls";
 const nav:{id:View;label:string;mark:string}[]=[
   {id:"overview",label:"Portfolio overview",mark:"OV"},{id:"incident",label:"Incident center",mark:"DQ"},
   {id:"lineage",label:"Lineage explorer",mark:"LN"},{id:"catalog",label:"Data catalog",mark:"CT"},
   {id:"experiment",label:"Experiment lab",mark:"EX"},
   {id:"assistant",label:"Governed assistant",mark:"AI"},{id:"model",label:"Model governance",mark:"ML"},
   {id:"cloud",label:"Cloud control plane",mark:"CL"},
+  {id:"controls",label:"Control evidence",mark:"CE"},
 ];
 const money=(value:number)=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(value);
 const exactMoney=(value:number)=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2,maximumFractionDigits:2}).format(value);
@@ -90,6 +92,21 @@ function Overview({setView}:{setView:(view:View)=>void}){
     </section>
     <section className="run-strip panel"><div><span>Last trusted transaction run</span><b>{data.freshness.last_good_run_id}</b></div><div><span>Published</span><b>{date(data.freshness.last_good_run_at)}</b></div><div><span>Freshness SLA</span><b>{data.freshness.sla}</b></div><div><span>Source evidence</span><code>{data.freshness.source_sha256.slice(0,18)}…</code></div></section>
   </div>;
+}
+
+function ControlEvidence(){
+  const [selected, setSelected]=useState(controlEvidence.controls[0].control_id);
+  const control=controlEvidence.controls.find(item=>item.control_id===selected)??controlEvidence.controls[0];
+  function download(){
+    const url=URL.createObjectURL(new Blob([JSON.stringify(controlEvidence,null,2)+"\n"],{type:"application/json"}));
+    const link=document.createElement("a"); link.href=url; link.download="governai-control-evidence.json"; link.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  return <div className="stack controls-page"><Title eyebrow="Executed local assurance scenario" title="Control evidence" description="Inspect the procedure, observations and exceptions behind every result. Download the sanitized report for independent review." tag="Synthetic data · local only"/>
+    <section className="panel controls-summary"><div><span className="eyebrow">LAST EXECUTION · {date(controlEvidence.executed_at)}</span><h2>{controlEvidence.summary.passed} of {controlEvidence.summary.executed} controls passed</h2><p>Each result comes from an isolated database generated for this report. These results describe that execution; they do not certify a running deployment.</p></div><button className="primary" onClick={download}>Download evidence JSON ↓</button></section>
+    <div className="controls-grid"><section className="panel controls-list" aria-label="Executed controls">{controlEvidence.controls.map(item=><button key={item.control_id} aria-pressed={selected===item.control_id} onClick={()=>setSelected(item.control_id)}><span>{item.control_id}</span><b>{item.objective}</b><small>{item.result}</small></button>)}</section>
+    <article className="panel control-detail" aria-live="polite"><Heading eyebrow={control.control_id} title={control.objective} badge={control.result} safe={control.result==="PASS"}/><h3>Test procedure</h3><p>{control.procedure}</p><h3>Observed result</h3><pre>{JSON.stringify(control.observations,null,2)}</pre><h3>Evidence references</h3><ul>{control.evidence_references.map(reference=><li key={reference}><code>{reference}</code></li>)}</ul><h3>Exceptions and remediation</h3><p>{control.exceptions.length?control.exceptions.join(" "):"No exception observed in this execution."} {control.remediation_status.replaceAll("_"," ")}</p></article></div>
+    <section className="panel control-detail"><Heading eyebrow="Scope of evidence" title="Boundaries remain attached to the report"/>{controlEvidence.limitations.map(item=><p key={item}>{item}</p>)}</section></div>;
 }
 
 function Heading({eyebrow,title,badge,safe=false}:{eyebrow:string;title:string;badge?:string;safe?:boolean}){
@@ -224,5 +241,5 @@ export default function App(){
   const [view,setView]=useState<View>("overview"),label=nav.find(n=>n.id===view)?.label;
   const verificationLabel=view==="cloud"?`CLOUD ${cloud.live_verification_status.replaceAll("_"," ")}`:view==="experiment"?"SIMULATED EVIDENCE":view==="assistant"?"POLICY BOUNDED":view==="model"?"RESEARCH ONLY":"LOCAL VERIFIED";
   const notice=view==="experiment"?data.experiment.data_notice:view==="assistant"?data.assistant.data_notice:view==="model"?data.model_governance.data_notice:data.data_notice;
-  return <div className="app"><a className="skip-link" href="#main-content">Skip to main content</a><aside className="sidebar"><button className="brand" onClick={()=>setView("overview")} aria-label="Open GovernAI portfolio overview"><span>G</span><p><b>Govern</b>AI<small>TRUST CONTROL PLANE</small></p></button><nav aria-label="GovernAI workspace"><small>WORKSPACE</small>{nav.map(n=><button className={view===n.id?"active":""} aria-current={view===n.id?"page":undefined} key={n.id} onClick={()=>setView(n.id)}><span>{n.mark}</span>{n.label}{n.id==="incident"&&<i>1</i>}</button>)}</nav><section className="phase"><span>PORTFOLIO RELEASE · LOCAL</span><b>Six evidence chapters</b><p>Data, cloud, experiments, governed analytics, and model risk—without overstating live execution.</p><div><i/></div><small>External live gates disclosed</small></section><footer><i/> Poojan Desai · portfolio project</footer></aside><main id="main-content"><header><p><span>GovernAI</span><i>/</i><b>{label}</b></p><div><a className="repo-link" href="https://github.com/Poojan-Desai/governai" target="_blank" rel="noreferrer">GitHub ↗</a><span><i/>{snapshotIsFresh?"Data current":"Historical snapshot"} · SLA {snapshotIsFresh?"":"target "}{data.freshness.sla}</span><b>{verificationLabel}</b><button title={notice} aria-label="Show data-status explanation">i</button></div></header><nav className="mobile-nav" aria-label="Mobile workspace navigation">{nav.map(n=><button key={n.id} title={n.label} aria-label={n.label} aria-current={view===n.id?"page":undefined} className={view===n.id?"active":""} onClick={()=>setView(n.id)}>{n.mark}</button>)}</nav><div className="content">{view==="overview"&&<Overview setView={setView}/>} {view==="incident"&&<Incident setView={setView}/>} {view==="lineage"&&<Lineage/>} {view==="catalog"&&<Catalog/>} {view==="experiment"&&<ExperimentLab/>} {view==="assistant"&&<GovernedAssistant/>} {view==="model"&&<ModelGovernance/>} {view==="cloud"&&<CloudControl/>}<footer className="page-footer"><span>{notice}</span><span>{view==="cloud"?`Cloud status ${date(cloud.generated_at)} · Live ${cloud.live_verification_status}`:`Snapshot ${date(data.generated_at)} · Schema ${data.schema_version}`}</span></footer></div></main></div>;
+  return <div className="app"><a className="skip-link" href="#main-content">Skip to main content</a><aside className="sidebar"><button className="brand" onClick={()=>setView("overview")} aria-label="Open GovernAI portfolio overview"><span>G</span><p><b>Govern</b>AI<small>TRUST CONTROL PLANE</small></p></button><nav aria-label="GovernAI workspace"><small>WORKSPACE</small>{nav.map(n=><button className={view===n.id?"active":""} aria-current={view===n.id?"page":undefined} key={n.id} onClick={()=>setView(n.id)}><span>{n.mark}</span>{n.label}{n.id==="incident"&&<i>1</i>}</button>)}</nav><section className="phase"><span>PORTFOLIO RELEASE · LOCAL</span><b>Six evidence chapters</b><p>Data, cloud, experiments, governed analytics, and model risk—without overstating live execution.</p><div><i/></div><small>External live gates disclosed</small></section><footer><i/> Poojan Desai · portfolio project</footer></aside><main id="main-content"><header><p><span>GovernAI</span><i>/</i><b>{label}</b></p><div><a className="repo-link" href="https://github.com/Poojan-Desai/governai" target="_blank" rel="noreferrer">GitHub ↗</a><span><i/>{snapshotIsFresh?"Data current":"Historical snapshot"} · SLA {snapshotIsFresh?"":"target "}{data.freshness.sla}</span><b>{verificationLabel}</b><button title={notice} aria-label="Show data-status explanation">i</button></div></header><nav className="mobile-nav" aria-label="Mobile workspace navigation">{nav.map(n=><button key={n.id} title={n.label} aria-label={n.label} aria-current={view===n.id?"page":undefined} className={view===n.id?"active":""} onClick={()=>setView(n.id)}>{n.mark}</button>)}</nav><div className="content">{view==="overview"&&<Overview setView={setView}/>} {view==="incident"&&<Incident setView={setView}/>} {view==="lineage"&&<Lineage/>} {view==="catalog"&&<Catalog/>} {view==="experiment"&&<ExperimentLab/>} {view==="assistant"&&<GovernedAssistant/>} {view==="model"&&<ModelGovernance/>} {view==="cloud"&&<CloudControl/>} {view==="controls"&&<ControlEvidence/>}<footer className="page-footer"><span>{notice}</span><span>{view==="cloud"?`Cloud status ${date(cloud.generated_at)} · Live ${cloud.live_verification_status}`:`Snapshot ${date(data.generated_at)} · Schema ${data.schema_version}`}</span></footer></div></main></div>;
 }

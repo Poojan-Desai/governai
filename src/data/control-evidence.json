@@ -1,0 +1,172 @@
+{
+  "controls": [
+    {
+      "control_id": "DQ-001",
+      "evidence_references": [
+        "run-1f1b239760db4b42"
+      ],
+      "exceptions": [],
+      "executed_at": "2026-10-24T17:34:49.709752+00:00",
+      "objective": "Invalid required values quarantine the whole batch before publication",
+      "observations": {
+        "fact_rows_after": 60,
+        "fact_rows_before": 60,
+        "failed_rules": [
+          "transaction_id_unique",
+          "transaction_amount_positive",
+          "transaction_account_fk",
+          "transaction_timestamp_valid"
+        ],
+        "quarantined_rows": 120
+      },
+      "procedure": "Generate the documented four-fault batch; import and compare fact counts and quarantine evidence.",
+      "remediation_status": "NO_EXCEPTION",
+      "result": "PASS"
+    },
+    {
+      "control_id": "DQ-002",
+      "evidence_references": [
+        "run-cbd716d2a1364408"
+      ],
+      "exceptions": [],
+      "executed_at": "2026-10-24T17:34:49.709752+00:00",
+      "objective": "Identical imports remain idempotent across process-object restart",
+      "observations": {
+        "run_count": 1,
+        "same_run": true
+      },
+      "procedure": "Reopen and initialize the same database; replay the exact source and label; require original run identity.",
+      "remediation_status": "NO_EXCEPTION",
+      "result": "PASS"
+    },
+    {
+      "control_id": "DQ-003",
+      "evidence_references": [
+        "run-c0ca820c268047d9"
+      ],
+      "exceptions": [],
+      "executed_at": "2026-10-24T17:34:49.709752+00:00",
+      "objective": "A new batch identity cannot republish existing transaction IDs",
+      "observations": {
+        "accepted_rows": 0,
+        "status": "quarantined"
+      },
+      "procedure": "Import identical transactions under a different label and require full-file quarantine.",
+      "remediation_status": "NO_EXCEPTION",
+      "result": "PASS"
+    },
+    {
+      "control_id": "DQ-004",
+      "evidence_references": [
+        "run-cbd716d2a1364408"
+      ],
+      "exceptions": [],
+      "executed_at": "2026-10-24T17:34:49.709752+00:00",
+      "objective": "Published transaction counts and loss totals reconcile through the mart",
+      "observations": {
+        "analytics": [
+          60,
+          0.0
+        ],
+        "curated": [
+          60,
+          0.0
+        ],
+        "orphan_facts": 0,
+        "raw": [
+          60,
+          0.0
+        ]
+      },
+      "procedure": "Compare raw, curated and aggregated transaction counts and rounded confirmed-loss totals; check orphan facts.",
+      "remediation_status": "NO_EXCEPTION",
+      "result": "PASS"
+    },
+    {
+      "control_id": "PRIV-001",
+      "evidence_references": [
+        "run-f0f503633df44c0b"
+      ],
+      "exceptions": [],
+      "executed_at": "2026-10-24T17:34:49.709752+00:00",
+      "objective": "Analytical customer dimension uses the documented email masking projection",
+      "observations": {
+        "customer_count": 20,
+        "masking_mismatches": 0,
+        "unmasked_direct_columns": []
+      },
+      "procedure": "Compare masked projection with raw emails without exporting values; inspect analytical columns for direct fields.",
+      "remediation_status": "NO_EXCEPTION",
+      "result": "PASS"
+    },
+    {
+      "control_id": "SEC-001",
+      "evidence_references": [
+        "analytics_assistant.answer_question"
+      ],
+      "exceptions": [],
+      "executed_at": "2026-10-24T17:34:49.709752+00:00",
+      "objective": "Unsafe assistant instructions execute no SQL",
+      "observations": {
+        "executed_statements": 0,
+        "status": "BLOCKED_BY_POLICY"
+      },
+      "procedure": "Supply an explicit injection-shaped request to the approved-intent boundary and trace executed statements.",
+      "remediation_status": "NO_EXCEPTION",
+      "result": "PASS"
+    },
+    {
+      "control_id": "REL-001",
+      "evidence_references": [
+        "run-8b05fe6724e8492d"
+      ],
+      "exceptions": [],
+      "executed_at": "2026-10-24T17:34:49.709752+00:00",
+      "objective": "Partial raw and derived writes roll back while failure evidence survives",
+      "observations": {
+        "failed_run_retained": true,
+        "mart_preserved": true,
+        "new_raw_rows": 0,
+        "rollback_event_retained": true
+      },
+      "procedure": "Inject a rebuild failure after deletion of derived data; reopen committed state and inspect data and safe audit event.",
+      "remediation_status": "NO_EXCEPTION",
+      "result": "PASS"
+    }
+  ],
+  "environment": "isolated-local-synthetic",
+  "executed_at": "2026-10-24T17:34:49.709752+00:00",
+  "limitations": [
+    "Local synthetic demonstration; no live AWS, Snowflake or bank integration was exercised.",
+    "Assistant input blocking is not role-based authorization for direct database/file access.",
+    "Email masking is pseudonymization, not anonymization; raw SQLite remains sensitive and local.",
+    "The report is not a regulatory certification or independent assurance opinion.",
+    "A report checksum detects accidental changes only when compared with a trusted copy; it is not a signature."
+  ],
+  "schema_version": "governai-controls/v1",
+  "source_evidence": [
+    {
+      "asset_id": "source.card_accounts",
+      "byte_size": 1219,
+      "row_count": 25,
+      "sha256": "03e58fe283537a4d339ea11161c7d61d3cdea684ee8c32adf01c68060220f975"
+    },
+    {
+      "asset_id": "source.card_transactions",
+      "byte_size": 5287,
+      "row_count": 60,
+      "sha256": "4560abc00522ba56fdba270c64d4e304a5974f7079f048860af5a62551d8c96a"
+    },
+    {
+      "asset_id": "source.crm_customers",
+      "byte_size": 2103,
+      "row_count": 20,
+      "sha256": "fe2b8a4b76eb7de14764d6ff470ad3a393b1cdda8ae00100b37df2a13137a838"
+    }
+  ],
+  "status": "PASS",
+  "summary": {
+    "executed": 7,
+    "passed": 7
+  }
+}

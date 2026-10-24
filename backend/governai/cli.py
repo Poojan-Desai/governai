@@ -106,7 +106,14 @@ def main() -> None:
     for name in ("experiment-status", "assistant-status", "model-status", "cloud-status", "cloud-run", "cloud-incident"):
         command = sub.add_parser(name)
         command.add_argument("--project-root", type=Path, default=Path.cwd())
+    controls = sub.add_parser("controls")
+    controls.add_argument("--output", type=Path, required=True)
     args=parser.parse_args()
+    if args.command == "controls":
+        from .control_evidence import write_control_evidence
+        report = write_control_evidence(args.output)
+        print(json.dumps(report, indent=2))
+        raise SystemExit(0 if report["status"] == "PASS" else 1)
     root = args.project_root.resolve()
     if args.command=="demo":
         result = run_demo(root,args.reset)

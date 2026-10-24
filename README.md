@@ -16,6 +16,20 @@ It is intentionally not another fraud classifier. FraudLens covers fraud ML;
 GovernAI emphasizes data engineering, governance, cloud design,
 experimentation, governed analytics, and responsible ML.
 
+## Executable control evidence and source integrity
+
+The current local upgrade binds parsing, SHA-256 and byte size to one source
+capture, preventing a file-replacement race in ingestion provenance. A new
+**Control evidence** view exposes seven executed procedures and downloads their
+sanitized results: quarantine, restart replay, cross-batch duplicates,
+reconciliation, masking, assistant input blocking and rollback.
+
+[Reproduce the report, browse the screenshot and read the engineering decisions](docs/CONTROL_EVIDENCE.md).
+The verified suite is **57 Python tests + 13 Node tests**, plus lint/build and the
+control-report browser workflow. Cloud integrations remain locally tested only.
+The CLI `npm run controls` regenerates this isolated synthetic evidence; it does
+not operate a live pipeline. Current source changes have not been deployed.
+
 ## Honest project status — 2026-10-24
 
 | Scope | Implemented | Verified | Live status |
