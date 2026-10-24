@@ -36,6 +36,14 @@ or cloud resources. Each run generates new run IDs and execution timestamps;
 source bytes and control outcomes are reproducible, while report bytes vary with
 those provenance fields. JSON and its SHA-256 sidecar are saved together.
 
+Independent verification found that the original 60-transaction fixture had no
+confirmed losses. The control fixture now gives the first transaction in each
+month a loss equal to its positive transaction amount. DQ-004 requires a
+positive raw loss total as well as equality through the curated and mart layers.
+A regression deliberately zeros mart loss values and requires a failed report;
+this prevents a green result that exercises only zero totals. The general
+source generator and normal demo remain unchanged.
+
 ## Reproduce
 
 Python 3.12+ and Node 22+:
@@ -95,6 +103,9 @@ against the source report, desktop/mobile layout, keyboard focus and page errors
   This is registry-audit evidence at execution time, not proof of no vulnerabilities.
 - Development/preview servers now default to loopback. No public deployment ran.
 
+After independent verification, the strengthened reconciliation fixture and
+loss-corruption regression pass in a suite of 58 Python and 13 Node tests.
+
 ## Security boundary and remaining work
 
 The SQL role and masking definitions are cloud implementation artifacts, not
@@ -111,6 +122,13 @@ resources were used. Persistent historical control runs, fresh-label monitoring,
 local authenticated ingestion, fully incremental mart updates and cloud replay
 semantics remain out of scope. Report scenarios exercise a small synthetic
 sample and cannot certify correctness of all possible input combinations.
+
+The single-capture provenance fix applies to `LocalPipeline`. The preexisting
+cloud orchestrator still parses rows before reopening the source for its hash
+and object uploads. A local fake-adapter reproduction confirms that replacing
+the source after parsing can publish bytes that did not undergo the quality
+checks. Immutable staging or a captured-byte cloud upload path is required
+before treating cloud quality/provenance as protected against source mutation.
 
 ## Two engineering stories
 

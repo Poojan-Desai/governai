@@ -3,10 +3,10 @@
     {
       "control_id": "DQ-001",
       "evidence_references": [
-        "run-1f1b239760db4b42"
+        "run-b4970d4ab6084f3d"
       ],
       "exceptions": [],
-      "executed_at": "2026-10-24T17:34:49.709752+00:00",
+      "executed_at": "2026-10-24T22:29:12.833596+00:00",
       "objective": "Invalid required values quarantine the whole batch before publication",
       "observations": {
         "fact_rows_after": 60,
@@ -26,10 +26,10 @@
     {
       "control_id": "DQ-002",
       "evidence_references": [
-        "run-cbd716d2a1364408"
+        "run-6bdb2c5b1a93484a"
       ],
       "exceptions": [],
-      "executed_at": "2026-10-24T17:34:49.709752+00:00",
+      "executed_at": "2026-10-24T22:29:12.833596+00:00",
       "objective": "Identical imports remain idempotent across process-object restart",
       "observations": {
         "run_count": 1,
@@ -42,10 +42,10 @@
     {
       "control_id": "DQ-003",
       "evidence_references": [
-        "run-c0ca820c268047d9"
+        "run-e92d5b9572a1448c"
       ],
       "exceptions": [],
-      "executed_at": "2026-10-24T17:34:49.709752+00:00",
+      "executed_at": "2026-10-24T22:29:12.833596+00:00",
       "objective": "A new batch identity cannot republish existing transaction IDs",
       "observations": {
         "accepted_rows": 0,
@@ -58,37 +58,37 @@
     {
       "control_id": "DQ-004",
       "evidence_references": [
-        "run-cbd716d2a1364408"
+        "run-6bdb2c5b1a93484a"
       ],
       "exceptions": [],
-      "executed_at": "2026-10-24T17:34:49.709752+00:00",
+      "executed_at": "2026-10-24T22:29:12.833596+00:00",
       "objective": "Published transaction counts and loss totals reconcile through the mart",
       "observations": {
         "analytics": [
           60,
-          0.0
+          508.86
         ],
         "curated": [
           60,
-          0.0
+          508.86
         ],
         "orphan_facts": 0,
         "raw": [
           60,
-          0.0
+          508.86
         ]
       },
-      "procedure": "Compare raw, curated and aggregated transaction counts and rounded confirmed-loss totals; check orphan facts.",
+      "procedure": "Require a nonempty fixture with positive confirmed loss; compare raw, curated and aggregated transaction counts and rounded confirmed-loss totals; check orphan facts.",
       "remediation_status": "NO_EXCEPTION",
       "result": "PASS"
     },
     {
       "control_id": "PRIV-001",
       "evidence_references": [
-        "run-f0f503633df44c0b"
+        "run-60a9d45f4e4f435e"
       ],
       "exceptions": [],
-      "executed_at": "2026-10-24T17:34:49.709752+00:00",
+      "executed_at": "2026-10-24T22:29:12.833596+00:00",
       "objective": "Analytical customer dimension uses the documented email masking projection",
       "observations": {
         "customer_count": 20,
@@ -105,7 +105,7 @@
         "analytics_assistant.answer_question"
       ],
       "exceptions": [],
-      "executed_at": "2026-10-24T17:34:49.709752+00:00",
+      "executed_at": "2026-10-24T22:29:12.833596+00:00",
       "objective": "Unsafe assistant instructions execute no SQL",
       "observations": {
         "executed_statements": 0,
@@ -118,10 +118,10 @@
     {
       "control_id": "REL-001",
       "evidence_references": [
-        "run-8b05fe6724e8492d"
+        "run-504f02c6a74f44c3"
       ],
       "exceptions": [],
-      "executed_at": "2026-10-24T17:34:49.709752+00:00",
+      "executed_at": "2026-10-24T22:29:12.833596+00:00",
       "objective": "Partial raw and derived writes roll back while failure evidence survives",
       "observations": {
         "failed_run_retained": true,
@@ -135,7 +135,7 @@
     }
   ],
   "environment": "isolated-local-synthetic",
-  "executed_at": "2026-10-24T17:34:49.709752+00:00",
+  "executed_at": "2026-10-24T22:29:12.833596+00:00",
   "limitations": [
     "Local synthetic demonstration; no live AWS, Snowflake or bank integration was exercised.",
     "Assistant input blocking is not role-based authorization for direct database/file access.",
@@ -153,9 +153,9 @@
     },
     {
       "asset_id": "source.card_transactions",
-      "byte_size": 5287,
+      "byte_size": 5294,
       "row_count": 60,
-      "sha256": "4560abc00522ba56fdba270c64d4e304a5974f7079f048860af5a62551d8c96a"
+      "sha256": "537798b73e4e5144f4d205445efc858a2dbd02a25324f77427c3a5e5d125205d"
     },
     {
       "asset_id": "source.crm_customers",

@@ -34,6 +34,18 @@ def run_control_evidence() -> dict[str, object]:
         root = Path(directory)
         generated = generate_sources(root / "sources", seed=2027, customer_count=20,
                                      account_count=25, transactions_per_month=10)
+        # A small random sample can contain no losses. Give the first row of
+        # every month a bounded nonzero loss so reconciliation exercises money
+        # as well as counts, and cannot pass merely because every total is zero.
+        transaction_file = generated.base_dir / "transactions.csv"
+        transaction_rows = LocalPipeline.read_csv(transaction_file)
+        loss_months: set[str] = set()
+        for row in transaction_rows:
+            month = row["transaction_ts"][:7]
+            if month not in loss_months:
+                row.update(is_fraud="1", confirmed_loss=row["amount"])
+                loss_months.add(month)
+        write_csv(transaction_file, TRANSACTION_FIELDS, transaction_rows)
         pipeline = LocalPipeline(root / "evidence.db"); pipeline.initialize()
         customers = pipeline.ingest_customers(generated.base_dir / "customers.csv")
         accounts = pipeline.ingest_accounts(generated.base_dir / "accounts.csv")
@@ -71,8 +83,9 @@ def run_control_evidence() -> dict[str, object]:
             mart = db.execute("SELECT SUM(transaction_count),ROUND(SUM(confirmed_loss),2) FROM mart_monthly_loss_kpis").fetchone()
             orphan_count = db.execute("SELECT COUNT(*) FROM fct_card_transactions f LEFT JOIN dim_account a ON a.account_id=f.account_id WHERE a.account_id IS NULL").fetchone()[0]
         record("DQ-004", "Published transaction counts and loss totals reconcile through the mart",
-               "Compare raw, curated and aggregated transaction counts and rounded confirmed-loss totals; check orphan facts.",
-               tuple(raw) == tuple(fact) == tuple(mart) and orphan_count == 0,
+               "Require a nonempty fixture with positive confirmed loss; compare raw, curated and aggregated transaction counts and rounded confirmed-loss totals; check orphan facts.",
+               raw[0] > 0 and raw[1] is not None and raw[1] > 0
+               and tuple(raw) == tuple(fact) == tuple(mart) and orphan_count == 0,
                {"raw": list(raw), "curated": list(fact), "analytics": list(mart), "orphan_facts": orphan_count}, [transactions.run_id])
 
         with pipeline.connect() as db:

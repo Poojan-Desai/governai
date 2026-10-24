@@ -25,7 +25,7 @@ sanitized results: quarantine, restart replay, cross-batch duplicates,
 reconciliation, masking, assistant input blocking and rollback.
 
 [Reproduce the report, browse the screenshot and read the engineering decisions](docs/CONTROL_EVIDENCE.md).
-The verified suite is **57 Python tests + 13 Node tests**, plus lint/build and the
+The verified suite is **58 Python tests + 13 Node tests**, plus lint/build and the
 control-report browser workflow. Cloud integrations remain locally tested only.
 The CLI `npm run controls` regenerates this isolated synthetic evidence; it does
 not operate a live pipeline. Current source changes have not been deployed.

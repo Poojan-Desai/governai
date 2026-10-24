@@ -23,6 +23,22 @@ class ControlEvidenceTests(unittest.TestCase):
         for forbidden in ['example.test','+1-555-','Synthetic Customer 00001','ACC-00001','CONTROL-ROLLBACK-NEW']:
             self.assertNotIn(forbidden,payload)
         self.assertEqual(sum(item['row_count'] for item in report['source_evidence']),105)
+        reconciliation=next(c for c in report['controls'] if c['control_id']=='DQ-004')
+        self.assertGreater(reconciliation['observations']['raw'][1],0)
+
+    def test_reconciliation_detects_lost_mart_loss_values(self):
+        rebuild=LocalPipeline.rebuild_products
+        def omit_mart_losses(pipeline, db):
+            rebuild(pipeline, db)
+            db.execute('UPDATE mart_monthly_loss_kpis SET confirmed_loss=0')
+        with patch.object(LocalPipeline,'rebuild_products',new=omit_mart_losses):
+            report=run_control_evidence()
+        self.assertEqual(report['status'],'FAIL')
+        reconciliation=next(c for c in report['controls'] if c['control_id']=='DQ-004')
+        self.assertEqual(reconciliation['result'],'FAIL')
+        self.assertGreater(reconciliation['observations']['raw'][1],0)
+        self.assertEqual(reconciliation['observations']['analytics'][1],0)
+        self.assertTrue(reconciliation['exceptions'])
 
     def test_a_real_control_failure_is_reported_as_failure(self):
         # Simulate broken masking; do not let a green report be constant metadata.

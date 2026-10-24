@@ -116,6 +116,7 @@ test("control evidence exports executed procedures with source provenance and sc
   assert.equal(report.summary.executed,report.controls.length);
   assert.equal(report.summary.passed,report.controls.filter(c=>c.result==="PASS").length);
   assert.ok(report.controls.some(c=>c.control_id==="REL-001"&&c.observations.mart_preserved));
+  assert.ok(report.controls.some(c=>c.control_id==="DQ-004"&&c.observations.raw[1]>0));
   assert.ok(report.source_evidence.every(s=>/^[a-f0-9]{64}$/.test(s.sha256)&&s.byte_size>0));
   assert.doesNotMatch(JSON.stringify(report),/customer\d+@|\+1-555-|ACC-\d+/);
 });
