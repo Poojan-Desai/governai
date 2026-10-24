@@ -93,4 +93,17 @@ run.
 | P6-03 | Public evidence excludes raw identifiers and secrets | Privacy/security scans | VERIFIED LOCALLY |
 | P6-04 | Keyboard focus, skip link, labels, and reduced-motion rules exist | Accessibility contracts | VERIFIED LOCALLY |
 | P6-05 | Production build and CI workflow pass | Local build + GitHub Actions | VERIFIED |
-| P6-06 | Hosted URL serves the release | Sites deployment record | PRIVATE DEPLOYED; PUBLIC ACCESS NOT ENABLED |
+| P6-06 | Existing hosted snapshot is publicly reachable | Netlify HTTP 200 and browser check (2026-10-19) | PUBLIC SNAPSHOT VERIFIED; CURRENT BRANCH NOT DEPLOYED |
+
+## October 2026 local correctness increment
+
+| Criterion | Evidence | Status |
+| --- | --- | --- |
+| Canonical ordered headers and row shape gate both local and cloud paths | Local quarantine + recording-port integration tests | VERIFIED LOCALLY |
+| Required fields/IDs, finite money, binary flags and nonempty batch policy | Field/value boundary cases + full pipeline quarantine | VERIFIED LOCALLY |
+| Partial load and rebuild failures preserve data while retaining failed-run evidence | Whole-table before/after equality, persisted manifest/check/audit assertions | VERIFIED LOCALLY |
+| Repeated failed batch is explicit; retry requires a new label | Run-linked exception and successful explicit retry | VERIFIED LOCALLY |
+
+The interactive scenario selector, local execution bridge, run-history UI and
+run-scoped before/after snapshot measurements remain unimplemented. No cloud
+status is changed by this increment.

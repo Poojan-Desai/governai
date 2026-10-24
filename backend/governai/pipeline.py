@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Callable, Iterator, Mapping, Sequence
 
 from .catalog import bootstrap_catalog, downstream_assets
-from .contracts import CheckResult, has_critical_failure, validate_accounts, validate_customers, validate_transactions
+from .contracts import CheckResult, has_critical_failure, result, validate_accounts, validate_customers, validate_transactions
 from .generator import sha256_file
 
 
@@ -34,6 +34,19 @@ class RunOutcome:
     source_sha256: str
     checks: tuple[CheckResult, ...]
     impacted_assets: tuple[str, ...] = ()
+
+
+class PipelineExecutionError(RuntimeError):
+    """A terminal local failure whose run and rollback evidence were retained."""
+
+    def __init__(self, run_id: str, *, repeated: bool = False):
+        self.run_id = run_id
+        self.repeated = repeated
+        description = "Batch previously failed" if repeated else "Batch processing failed"
+        super().__init__(
+            f"{description}; no records published. Inspect run {run_id}. "
+            "Use a new batch label for an explicit retry."
+        )
 
 
 class LocalPipeline:
@@ -60,8 +73,15 @@ class LocalPipeline:
 
     @staticmethod
     def read_csv(path: Path) -> list[dict[str, str]]:
+        rows, _ = LocalPipeline.read_csv_with_columns(path)
+        return rows
+
+    @staticmethod
+    def read_csv_with_columns(path: Path) -> tuple[list[dict[str, str]], tuple[str, ...]]:
         with path.open("r", encoding="utf-8", newline="") as handle:
-            return list(csv.DictReader(handle))
+            reader = csv.DictReader(handle)
+            rows = list(reader)
+            return rows, tuple(reader.fieldnames or ())
 
     @staticmethod
     def batch_id(asset_id: str, source_hash: str, label: str) -> str:
@@ -85,25 +105,54 @@ class LocalPipeline:
         return RunOutcome(row["run_id"], row["batch_id"], row["asset_id"], row["status"], row["source_row_count"], row["accepted_row_count"], row["quarantined_row_count"], row["source_sha256"], checks, impacted)
 
     def ingest_customers(self, path: Path, label: str = "base") -> RunOutcome:
-        rows = self.read_csv(path)
-        return self.ingest("source.crm_customers", "validated.customer_profiles", path, label, rows, validate_customers(rows), self.load_customers)
+        rows, columns = self.read_csv_with_columns(path)
+        return self.ingest("source.crm_customers", "validated.customer_profiles", path, label, rows, validate_customers(rows, columns=columns), self.load_customers)
 
     def ingest_accounts(self, path: Path, label: str = "base") -> RunOutcome:
-        rows = self.read_csv(path)
-        checks = validate_accounts(rows, self.known_ids("raw_customers", "customer_id"))
+        rows, columns = self.read_csv_with_columns(path)
+        checks = validate_accounts(rows, self.known_ids("raw_customers", "customer_id"), columns=columns)
         return self.ingest("source.card_accounts", "validated.card_accounts", path, label, rows, checks, self.load_accounts)
 
     def ingest_transactions(self, path: Path, label: str = "base") -> RunOutcome:
-        rows = self.read_csv(path)
-        checks = validate_transactions(rows, self.known_ids("raw_accounts", "account_id"))
+        rows, columns = self.read_csv_with_columns(path)
+        checks = validate_transactions(rows, self.known_ids("raw_accounts", "account_id"), columns=columns)
         return self.ingest("source.card_transactions", "validated.card_transactions", path, label, rows, checks, self.load_transactions)
+
+    @staticmethod
+    def transaction_replay_check(connection: sqlite3.Connection, rows: Sequence[Mapping[str, str]]) -> CheckResult:
+        identifiers = sorted({row["transaction_id"] for row in rows if isinstance(row.get("transaction_id"), str)})
+        existing: set[str] = set()
+        # Keep queries below SQLite's traditional 999-variable limit and use
+        # its primary-key index instead of scanning the entire transaction log.
+        for offset in range(0, len(identifiers), 900):
+            chunk = identifiers[offset:offset + 900]
+            placeholders = ",".join("?" for _ in chunk)
+            existing.update(row[0] for row in connection.execute(
+                f"SELECT transaction_id FROM raw_transactions WHERE transaction_id IN ({placeholders})", chunk,
+            ))
+        return result(
+            "transaction_id_not_previously_loaded",
+            "Transaction IDs have not been published by another batch",
+            sum(isinstance(row.get("transaction_id"), str) and row["transaction_id"] in existing for row in rows),
+            "0 rows with previously published transaction IDs; replay the original batch identity for idempotency",
+        )
 
     def ingest(self, asset_id: str, validated_id: str, path: Path, label: str, rows: Sequence[Mapping[str, str]], checks: Sequence[CheckResult], loader: Callable[[sqlite3.Connection, Sequence[Mapping[str, str]], str], None]) -> RunOutcome:
         source_hash = sha256_file(path)
         batch_id = self.batch_id(asset_id, source_hash, label)
+        failure: PipelineExecutionError | None = None
+        cause: Exception | None = None
         with self.connect() as connection:
+            # Serialize identity lookup, replay checks and publication. A second
+            # writer observes the first committed outcome rather than passing a
+            # stale check or colliding on pipeline_runs.batch_id.
+            connection.execute("BEGIN IMMEDIATE")
             if existing := self.existing(connection, batch_id):
+                if existing.status == "failed":
+                    raise PipelineExecutionError(existing.run_id, repeated=True)
                 return existing
+            if asset_id == "source.card_transactions":
+                checks = [*checks, self.transaction_replay_check(connection, rows)]
             run_id, started = f"run-{uuid.uuid4().hex[:16]}", utc_now()
             connection.execute("INSERT INTO pipeline_runs(run_id,pipeline_name,batch_id,asset_id,source_path,source_sha256,started_at,status,source_row_count) VALUES(?,'governed_batch_ingestion',?,?,?,?,?,'running',?)", (run_id,batch_id,asset_id,path.name,source_hash,started,len(rows)))
             connection.execute("INSERT INTO source_manifests VALUES(?,?,?,?,?,?,?,?)", (f"manifest-{uuid.uuid4().hex[:16]}",run_id,asset_id,path.name,source_hash,path.stat().st_size,len(rows),started))
@@ -114,12 +163,37 @@ class LocalPipeline:
                 connection.execute("UPDATE pipeline_runs SET status='quarantined',ended_at=?,accepted_row_count=0,quarantined_row_count=? WHERE run_id=?", (ended,len(rows),run_id))
                 self.audit(connection,"batch.quarantined",asset_id,run_id,"blocked",{"policy":"FAIL_CLOSED_FILE_ATOMIC_V1","failed_rules":[c.rule_id for c in checks if not c.passed],"impacted_assets":impacted})
                 return RunOutcome(run_id,batch_id,asset_id,"quarantined",len(rows),0,len(rows),source_hash,tuple(checks),impacted)
-            loader(connection, rows, run_id)
-            self.rebuild_products(connection)
-            ended = utc_now()
-            connection.execute("UPDATE pipeline_runs SET status='succeeded',ended_at=?,accepted_row_count=? WHERE run_id=?", (ended,len(rows),run_id))
-            self.audit(connection,"batch.published",validated_id,run_id,"succeeded",{"accepted_rows":len(rows),"source_sha256":source_hash})
-            return RunOutcome(run_id,batch_id,asset_id,"succeeded",len(rows),len(rows),0,source_hash,tuple(checks))
+            # Preserve control-plane evidence while rolling back every raw and
+            # derived data change if either loading or rebuilding fails.
+            connection.execute("SAVEPOINT publish_batch")
+            try:
+                loader(connection, rows, run_id)
+                self.rebuild_products(connection)
+                ended = utc_now()
+                connection.execute("UPDATE pipeline_runs SET status='succeeded',ended_at=?,accepted_row_count=? WHERE run_id=?", (ended,len(rows),run_id))
+                self.audit(connection,"batch.published",validated_id,run_id,"succeeded",{"accepted_rows":len(rows),"source_sha256":source_hash})
+            except Exception as exc:
+                connection.execute("ROLLBACK TO SAVEPOINT publish_batch")
+                connection.execute("RELEASE SAVEPOINT publish_batch")
+                connection.execute("UPDATE pipeline_runs SET status='failed',ended_at=?,accepted_row_count=0,quarantined_row_count=0 WHERE run_id=?", (utc_now(),run_id))
+                # Exception messages can contain source values. Retain a type
+                # and a safe operational explanation rather than raw payloads.
+                self.audit(connection,"batch.failed",asset_id,run_id,"failed",{
+                    "error_type":type(exc).__name__,
+                    "message":"Load or product rebuild failed; all data writes rolled back.",
+                    "stage":"load_and_rebuild",
+                    "rollback_confirmed":True,
+                    "source_sha256":source_hash,
+                    "retry_policy":"Explicit retry requires a new batch label.",
+                })
+                failure, cause = PipelineExecutionError(run_id), exc
+            else:
+                connection.execute("RELEASE SAVEPOINT publish_batch")
+                return RunOutcome(run_id,batch_id,asset_id,"succeeded",len(rows),len(rows),0,source_hash,tuple(checks))
+        # Raising inside the outer transaction would erase the failure record.
+        if failure is not None:
+            raise failure from cause
+        raise RuntimeError("Pipeline finished without an outcome")
 
     @staticmethod
     def load_customers(connection: sqlite3.Connection, rows: Sequence[Mapping[str, str]], run_id: str) -> None:
@@ -131,7 +205,9 @@ class LocalPipeline:
 
     @staticmethod
     def load_transactions(connection: sqlite3.Connection, rows: Sequence[Mapping[str, str]], run_id: str) -> None:
-        connection.executemany("INSERT INTO raw_transactions VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(transaction_id) DO NOTHING", [(r["transaction_id"],r["account_id"],r["transaction_ts"],float(r["amount"]),r["merchant_category"],r["channel"],r["country_code"],int(r["is_fraud"]),float(r["confirmed_loss"]),run_id) for r in rows])
+        # The quality gate handles known IDs. Retain a strict unique constraint
+        # as a final guard: no silent skips may inflate accepted-row counts.
+        connection.executemany("INSERT INTO raw_transactions VALUES(?,?,?,?,?,?,?,?,?,?)", [(r["transaction_id"],r["account_id"],r["transaction_ts"],float(r["amount"]),r["merchant_category"],r["channel"],r["country_code"],int(r["is_fraud"]),float(r["confirmed_loss"]),run_id) for r in rows])
 
     @staticmethod
     def token(customer_id: str) -> str:

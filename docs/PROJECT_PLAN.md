@@ -8,8 +8,16 @@
 | 3 — Experimentation | Stable assignment, KPI definitions, CIs, significance, impact, ROI | Seeded calculations match independent references | Phase 3A implemented + locally verified; live pilot not run |
 | 4 — Governed analytics assistant | Semantic metrics, fixed SQL, citations, limitations, injection defenses | Adversarial evals and numeric reconciliation | Phase 4A implemented + locally verified; no external LLM |
 | 5 — Responsible ML | Challenger, feature contract, model card, drift monitoring, approvals | Time-based evaluation and hard production block | Phase 5A implemented + locally verified; external approvals not run |
-| 6 — Portfolio release | Recruiter overview, guided demo, responsive UI, metadata, release evidence | Clean build, CI, privacy/security scan, hosted release record | Private hosted release complete; public access not enabled |
+| 6 — Portfolio release | Recruiter overview, guided demo, responsive UI, metadata, release evidence | Clean build, CI, privacy/security scan, hosted release record | Existing public Netlify demonstration reachable (2026-10-19); new local changes not deployed |
 
 Phase 2 intentionally uses a Python entry point instead of adding Step Functions,
 Glue, Lambda, or containers before a deployed scheduling need exists. A future
 hosted runner can invoke the same command without changing quality semantics.
+
+## October 2026 quality increment
+
+Shared contracts now cover ordered schemas, required values/IDs, finite numbers,
+binary fraud flags, malformed rows, and empty batches. Local data-plane failures
+retain failed-run evidence after rollback. This is a locally verified correctness
+increment, not completion of the planned interactive incident workflow. See
+[local controls](LOCAL_QUALITY_CONTROLS.md).

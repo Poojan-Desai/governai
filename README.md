@@ -4,7 +4,7 @@
 
 **Evidence-first Data & AI governance portfolio by Poojan Desai**
 
-[Hosted preview (owner-only)](https://governai-poojan-desai.mannered.chatgpt.site)
+[Public demonstration](https://governai-poojan-desai.netlify.app)
 · [Interview walkthrough](docs/PORTFOLIO_WALKTHROUGH.md)
 
 GovernAI is an enterprise-style Data & AI governance platform built with safe,
@@ -16,7 +16,7 @@ It is intentionally not another fraud classifier. FraudLens covers fraud ML;
 GovernAI emphasizes data engineering, governance, cloud design,
 experimentation, governed analytics, and responsible ML.
 
-## Honest project status — 2026-08-17
+## Honest project status — 2026-10-24
 
 | Scope | Implemented | Verified | Live status |
 | --- | --- | --- | --- |
@@ -26,13 +26,38 @@ experimentation, governed analytics, and responsible ML.
 | Phase 3A experimentation | Stable assignment, predeclared KPI, confidence interval, significance, sample-bounded impact, ROI assumptions, Experiment Lab | Seeded calculations match independent references + browser/build checks | Simulated locally; no live customer experiment |
 | Phase 4A governed analytics | Approved semantic metrics, fixed read-only queries, citations, abstention, injection blocking | Numeric reconciliation + adversarial tests | Deterministic local prototype; no external LLM |
 | Phase 5A responsible ML | Challenger backtest, drift monitoring, model card, limitations, approval gates | Independent formulas + production-block assertion | Research-only; no model-risk or production approval |
-| Portfolio release | Recruiter overview, guided walkthrough, responsive dashboard, interview materials | Clean build, accessibility review, CI, public snapshot tests | Private hosted release complete; public access not enabled |
+| Portfolio release | Recruiter overview, guided walkthrough, responsive dashboard, interview materials | Clean build, accessibility review, CI, public snapshot tests | Existing public Netlify snapshot reachable; current branch changes remain local |
 
-No AWS resource or Snowflake object was created in the development environment
-for this revision because credentials, accounts, Terraform, dbt, and boto3 were
-not available. The dashboard says **LIVE RUN NOT PERFORMED**. A live success is
+No AWS resource or Snowflake object was created and no live cloud execution was
+performed for this revision. The dashboard says **LIVE RUN NOT PERFORMED**. A live success is
 recognized only when all three batch IDs, row counts, and SHA-256 values match
 Snowflake audit evidence.
+
+## Local quality and failure evidence — October 2026
+
+The shared local/cloud contracts reject noncanonical or duplicated CSV headers,
+malformed row shapes, empty batches, missing required values and identifiers,
+nonfinite monetary values, and invalid binary fraud flags. Header order is
+explicit because the Snowflake COPY adapter maps columns positionally.
+
+Local processing failures roll back raw and derived writes while retaining the
+run, manifest, quality checks, and a structured `batch.failed` audit event.
+Repeated failed batches raise a run-linked error; a new label is required for an
+explicit retry. The original four-defect incident still quarantines all 120 rows.
+See [local quality and failure controls](docs/LOCAL_QUALITY_CONTROLS.md).
+
+Local transaction ingestion also rejects cross-batch replays: a distinct batch
+containing any previously published transaction ID is quarantined in full,
+including otherwise-new rows. Original batch reruns return their existing
+outcomes. SQLite writer serialization protects those decisions during concurrent
+runs, and a strict insert constraint prevents silent skips and inflated acceptance
+counts. This incremental replay control is locally tested; equivalent Snowflake
+cross-batch conflict semantics remain unimplemented.
+
+The public web interface inspects stored demonstration snapshots. It does not
+execute the Python pipeline in the browser; interactive scenario execution and
+run-history inspection remain planned work. The current branch has not been
+deployed.
 
 ## What Phase 2 adds
 

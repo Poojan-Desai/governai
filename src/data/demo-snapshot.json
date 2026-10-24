@@ -1,12 +1,12 @@
 {
   "schema_version": "1.2",
-  "generated_at": "2026-08-18T03:48:15.286550+00:00",
+  "generated_at": "2026-10-19T17:14:52.765276+00:00",
   "environment": "local-verified",
   "data_notice": "Deterministic simulated banking data; no real customers or bank systems.",
   "summary": {
     "governed_assets": 20,
-    "quality_checks": 17,
-    "quality_checks_passed": 13,
+    "quality_checks": 35,
+    "quality_checks_passed": 31,
     "classified_columns": 12,
     "direct_identifier_columns": 3,
     "accepted_transactions": 3600,
@@ -14,16 +14,16 @@
     "protected_downstream_assets": 11
   },
   "freshness": {
-    "last_good_run_id": "run-8479727bd972470a",
-    "last_good_run_at": "2026-08-18T03:48:15.273934+00:00",
+    "last_good_run_id": "run-1557f921e2254b5a",
+    "last_good_run_at": "2026-10-19T17:14:52.752101+00:00",
     "source_sha256": "c21d3095258f60c8ef9b9917b87debe69e9c99139bfd717dc83ef933fb267ea1",
-    "snapshot_generated_at": "2026-08-18T03:48:15.286550+00:00",
+    "snapshot_generated_at": "2026-10-19T17:14:52.765276+00:00",
     "sla": "2 hours"
   },
   "incident": {
     "incident_id": "DQ-2026-001",
     "title": "Corrupted August transaction batch",
-    "run_id": "run-c2da8e0b65a74730",
+    "run_id": "run-487f881c6aa44bf3",
     "source_asset_id": "source.card_transactions",
     "source_file": "transactions_corrupt.csv",
     "source_sha256": "c5d2b71845112fbbd1cf627d05c3b24dc6905405e57de2921b10a030bbd9a5a8",
@@ -48,12 +48,12 @@
       },
       {
         "rule_id": "transaction_amount_positive",
-        "description": "Transaction amount is positive",
+        "description": "Transaction amount is finite and positive",
         "severity": "critical",
         "passed": 0,
         "failed_rows": 1,
         "observed_value": "1 failing rows",
-        "expected_value": "Every amount > 0"
+        "expected_value": "Every amount is finite and > 0"
       },
       {
         "rule_id": "transaction_account_fk",
@@ -147,7 +147,7 @@
     "slope": 0.095143,
     "intercept": 317.92381,
     "training_points": 6,
-    "trained_at": "2026-08-18T03:48:15.273909+00:00"
+    "trained_at": "2026-10-19T17:14:52.752070+00:00"
   },
   "experiment": {
     "experiment_id": "card-alert-enrollment-v1",
@@ -1064,39 +1064,39 @@
   ],
   "audit_events": [
     {
-      "event_id": "event-c7df8f28d10d4105",
-      "event_ts": "2026-08-18T03:48:15.277065+00:00",
+      "event_id": "event-a9c9039827484ba4",
+      "event_ts": "2026-10-19T17:14:52.755441+00:00",
       "actor": "system:pipeline",
       "action": "batch.quarantined",
       "resource_id": "source.card_transactions",
-      "run_id": "run-c2da8e0b65a74730",
+      "run_id": "run-487f881c6aa44bf3",
       "outcome": "blocked"
     },
     {
-      "event_id": "event-7b9ad671498b447a",
-      "event_ts": "2026-08-18T03:48:15.273962+00:00",
+      "event_id": "event-5febff0aa1ff46db",
+      "event_ts": "2026-10-19T17:14:52.752147+00:00",
       "actor": "system:pipeline",
       "action": "batch.published",
       "resource_id": "validated.card_transactions",
-      "run_id": "run-8479727bd972470a",
+      "run_id": "run-1557f921e2254b5a",
       "outcome": "succeeded"
     },
     {
-      "event_id": "event-ff68ed183b714d6a",
-      "event_ts": "2026-08-18T03:48:15.255120+00:00",
+      "event_id": "event-d5a2778e820b4482",
+      "event_ts": "2026-10-19T17:14:52.725010+00:00",
       "actor": "system:pipeline",
       "action": "batch.published",
       "resource_id": "validated.card_accounts",
-      "run_id": "run-ee12c9b3d6a94ce1",
+      "run_id": "run-4b1c1a3028d843a5",
       "outcome": "succeeded"
     },
     {
-      "event_id": "event-610ff1127ad6466f",
-      "event_ts": "2026-08-18T03:48:15.252199+00:00",
+      "event_id": "event-ab2a86cbee904fb9",
+      "event_ts": "2026-10-19T17:14:52.720476+00:00",
       "actor": "system:pipeline",
       "action": "batch.published",
       "resource_id": "validated.customer_profiles",
-      "run_id": "run-40ebdf08e1354910",
+      "run_id": "run-ac386ab7168f40a9",
       "outcome": "succeeded"
     }
   ],

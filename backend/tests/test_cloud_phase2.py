@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
 import tempfile
@@ -9,11 +10,11 @@ from pathlib import Path
 from unittest.mock import patch
 
 from governai.cloud.models import BatchManifest, LoadResult, ObjectWriteResult
-from governai.cloud.orchestrator import CloudPipeline, ReconciliationMismatch
+from governai.cloud.orchestrator import CloudPipeline, QualityGateError, ReconciliationMismatch
 from governai.cloud.s3 import S3DataLake, S3IdempotencyConflict
 from governai.cloud.snowflake import SnowflakeWarehouse
 from governai.cloud.status import build_readiness
-from governai.generator import generate_sources
+from governai.generator import generate_sources, write_csv
 
 
 class MemoryObjectStore:
@@ -152,6 +153,101 @@ class CloudPhase2Tests(unittest.TestCase):
         self.assertEqual(dbt.calls, [])
         self.assertTrue(any(key.startswith("raw/") for key in store.objects))
         self.assertTrue(any(key.startswith("quarantined/") and key.endswith("quality-evidence.json") for key in store.objects))
+
+    def test_invalid_headers_stop_the_affected_dataset_before_loading(self) -> None:
+        for dataset, expected_prior_loads in (("customers", 0), ("accounts", 1), ("transactions", 2)):
+            for corruption in ("missing_id", "reordered", "duplicate", "extra"):
+                with self.subTest(dataset=dataset, corruption=corruption), tempfile.TemporaryDirectory() as directory:
+                    generated = self._fixture(Path(directory))
+                    path = generated.base_dir / f"{dataset}.csv"
+                    with path.open(newline="") as handle:
+                        reader = csv.DictReader(handle)
+                        rows, fields = list(reader), tuple(reader.fieldnames)
+                    if corruption == "missing_id":
+                        fields = fields[1:]
+                    elif corruption == "reordered":
+                        fields = tuple(reversed(fields))
+                    elif corruption == "duplicate":
+                        fields = (*fields[:-1], fields[0])
+                    else:
+                        fields = (*fields, "unexpected")
+                        rows = [{**row, "unexpected": "x"} for row in rows]
+                    with path.open("w", newline="") as handle:
+                        writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="ignore")
+                        writer.writeheader()
+                        writer.writerows(rows)
+                    store, warehouse, dbt = MemoryObjectStore(), MemoryWarehouse(), RecordingDbt()
+                    pipeline = CloudPipeline(object_store=store, warehouse=warehouse, dbt=dbt)
+                    with self.assertRaises(QualityGateError) as raised:
+                        pipeline.run_base(source_dir=generated.base_dir)
+                    report = raised.exception.report
+                    batch = report.batches[-1]
+                    self.assertEqual(report.status, "QUARANTINED")
+                    self.assertEqual(batch.manifest.dataset, dataset)
+                    self.assertIsNone(batch.validated_object)
+                    self.assertIsNone(batch.load)
+                    self.assertEqual(len(warehouse.loads), expected_prior_loads)
+                    self.assertEqual(dbt.calls, [])
+                    self.assertEqual(report.lineage_edges_published, 0)
+                    self.assertTrue(any(check.rule_id.endswith("_schema_valid") and not check.passed for check in batch.checks))
+                    self.assertEqual(warehouse.events[-1]["event_type"], "QUALITY_GATE_BLOCKED")
+
+    def test_nonfinite_missing_and_binary_values_cannot_reach_warehouse(self) -> None:
+        cases = (
+            ("accounts", {"account_id": ""}, 1),
+            ("accounts", {"credit_limit": "inf"}, 1),
+            ("transactions", {"transaction_id": " "}, 2),
+            ("transactions", {"amount": "NaN"}, 2),
+            ("transactions", {"amount": "Infinity"}, 2),
+            ("transactions", {"confirmed_loss": "nan"}, 2),
+            ("transactions", {"is_fraud": "2"}, 2),
+            ("transactions", {"merchant_category": ""}, 2),
+        )
+        for dataset, mutation, expected_prior_loads in cases:
+            with self.subTest(dataset=dataset, mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                generated = self._fixture(Path(directory))
+                path = generated.base_dir / f"{dataset}.csv"
+                with path.open(newline="") as handle:
+                    reader = csv.DictReader(handle)
+                    rows, fields = list(reader), tuple(reader.fieldnames)
+                rows[0].update(mutation)
+                write_csv(path, fields, rows)
+                store, warehouse, dbt = MemoryObjectStore(), MemoryWarehouse(), RecordingDbt()
+                pipeline = CloudPipeline(object_store=store, warehouse=warehouse, dbt=dbt)
+                with self.assertRaises(QualityGateError) as raised:
+                    pipeline.run_base(source_dir=generated.base_dir)
+                batch = raised.exception.report.batches[-1]
+                self.assertIsNone(batch.load)
+                self.assertEqual(len(warehouse.loads), expected_prior_loads)
+                self.assertEqual(dbt.calls, [])
+                self.assertIsNotNone(batch.quarantine_object)
+
+    def test_empty_short_and_surplus_batches_have_quarantine_evidence(self) -> None:
+        for corruption in ("header_only", "empty_file", "short", "surplus"):
+            with self.subTest(corruption=corruption), tempfile.TemporaryDirectory() as directory:
+                generated = self._fixture(Path(directory))
+                path = generated.base_dir / "transactions.csv"
+                lines = path.read_text().splitlines()
+                if corruption == "header_only":
+                    contents = lines[0] + "\n"
+                elif corruption == "empty_file":
+                    contents = ""
+                elif corruption == "short":
+                    contents = lines[0] + "\n" + ",".join(lines[1].split(",")[:-1]) + "\n"
+                else:
+                    contents = lines[0] + "\n" + lines[1] + ",unexpected\n"
+                path.write_text(contents)
+                store, warehouse, dbt = MemoryObjectStore(), MemoryWarehouse(), RecordingDbt()
+                pipeline = CloudPipeline(object_store=store, warehouse=warehouse, dbt=dbt)
+                with self.assertRaises(QualityGateError) as raised:
+                    pipeline.run_base(source_dir=generated.base_dir)
+                batch = raised.exception.report.batches[-1]
+                self.assertIsNotNone(batch.quarantine_object)
+                self.assertIsNone(batch.validated_object)
+                self.assertEqual(len(warehouse.loads), 2)
+                self.assertEqual(dbt.calls, [])
+                evidence = next(body for key, body in store.objects.items() if key.endswith("quality-evidence.json"))
+                self.assertEqual(json.loads(evidence)["manifest"]["row_count"], batch.manifest.row_count)
 
     def test_repeated_batch_is_idempotent_and_skips_dbt(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

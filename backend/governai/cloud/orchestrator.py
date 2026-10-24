@@ -117,22 +117,21 @@ class CloudPipeline:
         rows: Sequence[Mapping[str, str]],
         known_customers: Iterable[str],
         known_accounts: Iterable[str],
+        columns: Sequence[str] | None = None,
     ) -> list[CheckResult]:
         if dataset == "customers":
-            return validate_customers(rows)
+            return validate_customers(rows, columns=columns)
         if dataset == "accounts":
-            return validate_accounts(rows, known_customers)
+            return validate_accounts(rows, known_customers, columns=columns)
         if dataset == "transactions":
-            return validate_transactions(rows, known_accounts)
+            return validate_transactions(rows, known_accounts, columns=columns)
         raise ValueError(f"Unsupported dataset: {dataset}")
 
     def run_base(self, *, source_dir: Path) -> CloudRunReport:
         run_id = f"cloud-run-{uuid.uuid4().hex[:16]}"
         report = CloudRunReport(run_id=run_id, status="RUNNING")
-        customer_rows, _ = self._rows(source_dir / "customers.csv")
-        account_rows, _ = self._rows(source_dir / "accounts.csv")
-        known_customers = {row["customer_id"] for row in customer_rows}
-        known_accounts = {row["account_id"] for row in account_rows}
+        known_customers: set[str] = set()
+        known_accounts: set[str] = set()
 
         try:
             for dataset, asset_id, filename in self.DATASETS:
@@ -156,7 +155,7 @@ class CloudPipeline:
                     filename="manifest.json",
                     content=manifest.canonical_json(),
                 )
-                checks = self._checks(dataset, rows, known_customers, known_accounts)
+                checks = self._checks(dataset, rows, known_customers, known_accounts, columns)
                 if has_critical_failure(checks):
                     quarantine = self.object_store.put_file(
                         zone="quarantined", dataset=dataset, manifest=manifest, path=path
@@ -194,6 +193,13 @@ class CloudPipeline:
                     raise QualityGateError(
                         f"Critical quality contract blocked {dataset}", report
                     )
+
+                # Parent IDs are trusted only after that dataset's schema and
+                # values pass. Missing identifier columns must reach quarantine.
+                if dataset == "customers":
+                    known_customers = {row["customer_id"] for row in rows}
+                elif dataset == "accounts":
+                    known_accounts = {row["account_id"] for row in rows}
 
                 validated = self.object_store.put_file(
                     zone="validated", dataset=dataset, manifest=manifest, path=path
@@ -280,7 +286,7 @@ class CloudPipeline:
             filename="manifest.json",
             content=manifest.canonical_json(),
         )
-        checks = validate_transactions(rows, known_account_ids)
+        checks = validate_transactions(rows, known_account_ids, columns=columns)
         report = CloudRunReport(run_id=run_id, status="RUNNING")
         if not has_critical_failure(checks):
             raise RuntimeError("Incident fixture unexpectedly passed its quality contract")

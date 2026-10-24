@@ -9,7 +9,8 @@ All records are simulated, but GovernAI treats them as if they were sensitive.
 | Secrets in source | SDK/environment discovery; ignored `.env`; storage integration instead of AWS keys | Repository/static tests |
 | Public or plaintext objects | S3 public-access block, TLS-only bucket policy, KMS default encryption and requested SSE-KMS writes | Terraform/API contract; live pending |
 | Tampered overwrite | Versioning, deterministic key, stored SHA-256, conflict on different bytes | Unit tested; live pending |
-| Bad/partial batch | Pre-load critical gate, file-atomic quarantine, COPY abort, transaction, fail-fast dbt | Integration tested; live pending |
+| Bad/partial batch | Ordered schema/value gate, file-atomic quarantine, COPY abort, transaction, fail-fast dbt | Local/recording-port integration tested; live pending |
+| Lost local processing failure | Savepoint rolls back data writes; run/check/manifest and safe typed audit event remain | Verified locally |
 | Excess warehouse access | Job-function roles, separate ingest/transform warehouses, schema/table future grants | SQL contract; live pending |
 | Direct identifiers | Snowflake name/email/phone masks; curated token and masked email | SQL/dbt contract; role-session test pending |
 | Financial values | Numeric masking for credit limit, amount, and confirmed loss | SQL contract; role-session test pending |
@@ -49,3 +50,9 @@ to the GovernAI audit table is a production-hardening task and is not claimed.
   remain production work.
 - Phase 5A model evidence uses simulated aggregates and three backtest folds;
   it does not replace model-risk, fairness, stress, business, or deployment review.
+
+Local failure audit details retain the exception class and a fixed rollback
+explanation, not raw exception messages or source records. Failures before a
+local run is registered (for example, an unreadable file or unavailable database)
+are still raised to the caller and are not claimed as retained execution history.
+See [local quality controls](LOCAL_QUALITY_CONTROLS.md).
