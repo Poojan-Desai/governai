@@ -37,6 +37,10 @@ to the GovernAI audit table is a production-hardening task and is not claimed.
 
 ## Known limitations
 
+- The single-capture source-integrity fix protects local ingestion. The cloud
+  orchestrator reopens paths for parsing, hashing and upload, so replacement can
+  make uploaded bytes differ from validated bytes. Immutable cloud staging and
+  cloud cross-batch replay conflict handling remain required before production use.
 - Simulated data prevents real-customer exposure but does not prove regulatory
   compliance.
 - S3 Object Lock is not enabled because it requires bucket-creation choices and

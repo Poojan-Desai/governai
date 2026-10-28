@@ -1,15 +1,16 @@
 # Portfolio release status
 
 Original release: 2026-08-18
-Current local verification: 2026-10-24
+Current local verification: 2026-10-28
 
 ## Release-ready locally
 
 - Deterministic evidence can be regenerated with one command.
 - Python, snapshot-contract, lint, type-check, and production-build gates pass.
-- October 24 verification: `npm test` passed 50 Python unit/integration tests
-  and 12 frontend/hosting contracts, followed by ESLint and the TypeScript/Vite
-  production build. Eight transaction-replay regressions are new in this increment.
+- October 28 verification: `npm test` passed 58 Python unit/integration tests
+  and 13 frontend/hosting contracts, followed by ESLint and the TypeScript/Vite
+  production build. Seven executable control procedures and the desktop/mobile
+  browser workflow also passed. See [the verification record](VERIFICATION_2026-10-28.md).
 - Local transaction replay protection quarantines overlapping batches, preserves
   original-identity idempotency under concurrent runs, and keeps acceptance
   counts consistent with actual inserts. The Snowflake equivalent remains work.
@@ -34,9 +35,13 @@ Current local verification: 2026-10-24
 - No customer experiment has been run.
 - No external LLM is called.
 - No model-risk or business-owner approval has occurred.
-- October quality-contract, durable-failure and transaction-replay changes are local and have not
-  been pushed, merged, or deployed. Interactive pipeline execution is not part
+- October quality-contract, durable-failure and transaction-replay changes have
+  been prepared for publication with their original local history. Confirm
+  publication and remote CI from the GitHub commit and Actions run. No deployment
+  is established by local validation. Interactive pipeline execution is not part
   of the existing static public demonstration.
+- The cloud source-path race and cloud cross-batch replay parity remain open;
+  local ingestion protections must not be described as cloud guarantees.
 
 This file is a release record, not permission to change any external status by
 editing documentation. Live states change only from captured execution evidence.
