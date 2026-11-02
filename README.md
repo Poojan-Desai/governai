@@ -7,8 +7,9 @@ React and TypeScript. GovernAI traces simulated banking data from source CSVs
 through validation, quarantine, lineage and KPI reconciliation, then exposes
 sanitized evidence in a dashboard.
 
+[Public dashboard](https://governai-poojan-desai.netlify.app) ·
 [Architecture](docs/ARCHITECTURE.md) · [Control evidence](docs/CONTROL_EVIDENCE.md) ·
-[Walkthrough](docs/PORTFOLIO_WALKTHROUGH.md) · [Verification](docs/VERIFICATION_2026-10-28.md)
+[Walkthrough](docs/PORTFOLIO_WALKTHROUGH.md) · [Verification](docs/VERIFICATION_2026-11-02.md)
 
 ![Control evidence dashboard](docs/images/control-evidence-desktop.png)
 
@@ -30,7 +31,7 @@ sanitized evidence in a dashboard.
 
 ## Verification
 
-Fresh local verification on **October 28, 2026** passed **58 Python tests and
+Fresh local verification on **November 2, 2026** passed **58 Python tests and
 13 Node tests**, ESLint, TypeScript and the production build. All **7 control
 procedures** passed; their synthetic fixture reconciled **60 transactions and
 508.86 in confirmed loss** across raw, curated and KPI layers. Desktop/mobile
@@ -39,7 +40,11 @@ browser checks exercised procedure selection, JSON download, overflow and focus.
 Tests include real process termination before commit, concurrent batch replay,
 source replacement after capture, injected rebuild failures, deliberately broken
 loss reconciliation and unsafe assistant requests. See the
-[verification record](docs/VERIFICATION_2026-10-28.md) for commands and scope.
+[verification record](docs/VERIFICATION_2026-11-02.md) for commands and scope.
+
+The static hosting configuration publishes only browser assets. See
+[deployment and version verification](docs/STATIC_DEPLOYMENT.md) for the existing
+Netlify site and its commit metadata.
 
 ## Run locally
 

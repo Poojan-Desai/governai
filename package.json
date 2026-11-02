@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc -b && vite build && mkdir -p dist/server && cp hosting/worker.js dist/server/index.js",
+    "build": "tsc -b && vite build && mkdir -p dist/server && cp hosting/worker.js dist/server/index.js && node scripts/write-build-info.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "lint": "eslint .",
     "test:web": "node --test tests/*.test.mjs",
