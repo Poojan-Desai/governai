@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from dataclasses import asdict
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from governai.cloud.models import BatchManifest, LoadResult, ObjectWriteResult
 from governai.cloud.orchestrator import CloudPipeline, QualityGateError, ReconciliationMismatch
@@ -202,6 +202,8 @@ class CloudPhase2Tests(unittest.TestCase):
             ("transactions", {"confirmed_loss": "nan"}, 2),
             ("transactions", {"is_fraud": "2"}, 2),
             ("transactions", {"merchant_category": ""}, 2),
+            ("transactions", {"transaction_ts": "20260131T23:59:59+00:00"}, 2),
+            ("transactions", {"transaction_ts": "2026-01-31T23:59:59-01:00"}, 2),
         )
         for dataset, mutation, expected_prior_loads in cases:
             with self.subTest(dataset=dataset, mutation=mutation), tempfile.TemporaryDirectory() as directory:
@@ -285,6 +287,51 @@ class CloudPhase2Tests(unittest.TestCase):
         self.assertEqual(warehouse.edges, {})
         self.assertEqual(warehouse.reconciliations, [])
         self.assertEqual(warehouse.events[-1]["event_type"], "PIPELINE_FAILED")
+
+    def test_cloud_failure_audit_does_not_persist_raw_exception_payload(self) -> None:
+        sensitive_message = "customer00001@example.test credential=private-example"
+        with tempfile.TemporaryDirectory() as directory:
+            generated = self._fixture(Path(directory))
+            warehouse, dbt = MemoryWarehouse(), RecordingDbt()
+            pipeline = CloudPipeline(object_store=MemoryObjectStore(), warehouse=warehouse, dbt=dbt)
+            with patch.object(dbt, "build", side_effect=RuntimeError(sensitive_message)):
+                with self.assertRaisesRegex(RuntimeError, "customer00001"):
+                    pipeline.run_base(source_dir=generated.base_dir)
+        event = warehouse.events[-1]
+        self.assertEqual(event["event_type"], "PIPELINE_FAILED")
+        self.assertEqual(event["details"]["error_type"], "RuntimeError")
+        self.assertNotIn("customer00001", json.dumps(event))
+        self.assertNotIn("private-example", json.dumps(event))
+
+    def test_snowflake_load_failure_redacts_durable_error_and_rolls_back(self) -> None:
+        sensitive_message = "COPY failed for customer00001@example.test credential=private-example"
+        connection, cursor = Mock(), Mock()
+        connection.cursor.return_value = cursor
+        cursor.fetchone.return_value = None
+
+        def execute(statement, parameters=None):
+            if "COPY INTO" in statement:
+                raise RuntimeError(sensitive_message)
+
+        cursor.execute.side_effect = execute
+        manifest = BatchManifest("2.0", "batch-abc", "source.test", "transactions", "x.csv", "a" * 64, 1, ("id",))
+        warehouse = SnowflakeWarehouse(connection_factory=lambda: connection)
+        with self.assertRaisesRegex(RuntimeError, "customer00001"):
+            warehouse.load_validated_csv(
+                dataset="transactions", s3_key="validated/transactions/batch_id=batch-abc/x.csv",
+                manifest=manifest,
+            )
+        connection.rollback.assert_called_once()
+        connection.commit.assert_called_once()
+        cursor.close.assert_called_once()
+        connection.close.assert_called_once()
+        failure_calls = [call for call in cursor.execute.call_args_list if "ERROR_MESSAGE=%s" in call.args[0]]
+        self.assertEqual(len(failure_calls), 1)
+        parameters = failure_calls[0].args[1]
+        self.assertEqual(parameters[0], manifest.batch_id)
+        self.assertIn("RuntimeError", parameters[1])
+        self.assertNotIn("customer00001", parameters[1])
+        self.assertNotIn("private-example", parameters[1])
 
     def test_s3_adapter_uses_kms_metadata_and_rejects_overwrite(self) -> None:
         manifest = BatchManifest("2.0", "batch-abc", "source.test", "transactions", "x.csv", "a" * 64, 1, ("id",))

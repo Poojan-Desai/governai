@@ -35,3 +35,36 @@ This remains a static, synthetic dashboard. It does not execute live ingestion
 in the browser or establish AWS/Snowflake/dbt deployment. The cloud source-path
 race and cloud cross-batch replay parity remain open. Local masking is not
 anonymization or local-file access control, and checksums are not signatures.
+
+## Subsequent release review
+
+The follow-up review found that Python's permissive ISO parser accepted basic and
+week dates and non-UTC offsets, while derived products use the validated UTC text
+prefix for calendar keys. The shared transaction contract now quarantines these
+representations before local or cloud load. Canonical UTC generated records are
+unchanged. Regression coverage includes accepted/rejected representations and
+both local and cloud quarantine behavior.
+
+Cloud operational failures now persist safe exception metadata rather than raw
+SDK/dbt messages in audit and batch-load records. The originating exception still
+reaches the authorized caller; this does not provide cross-batch cloud rollback.
+
+A fresh dependency audit reported zero production findings and 12 moderate
+build/lint findings propagated from `minimatch` 10.2.6. The reviewed advisory
+[GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249)
+requires 11.0.1. The current upstream lint dependencies request major version 10;
+a forced major override or suggested tooling downgrade was not applied. The
+static browser bundle does not execute this lint dependency. Builds should use
+trusted repository inputs until upstream tooling adopts the fix. An audit is a
+point-in-time dependency check, not a guarantee of security.
+
+The catalog now resolves details from the filtered results, clears details when
+no asset matches, and names its search control for assistive technology. The
+model-governance grid now allows its child panels to shrink on narrow screens;
+the comparison table scrolls inside its panel. Browser regression checks cover
+catalog selection/empty results and mobile table navigation alongside the seven
+control selectors, evidence download, keyboard focus and uncaught errors.
+
+Final local release checks: 61 Python tests, 13 Node tests, ESLint, TypeScript,
+production build, regenerated seven-control report, clean dependency installation,
+and redacted Git-history secret scan passed. The dependency risk above remains.

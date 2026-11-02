@@ -1,6 +1,6 @@
 {
   "schema_version": "1.2",
-  "generated_at": "2026-11-02T14:58:09.471633+00:00",
+  "generated_at": "2026-11-02T20:03:44.485810+00:00",
   "environment": "local-verified",
   "data_notice": "Deterministic simulated banking data; no real customers or bank systems.",
   "summary": {
@@ -14,16 +14,16 @@
     "protected_downstream_assets": 11
   },
   "freshness": {
-    "last_good_run_id": "run-1c9a318f3ae24d21",
-    "last_good_run_at": "2026-11-02T14:58:09.454858+00:00",
+    "last_good_run_id": "run-835be64a768c4363",
+    "last_good_run_at": "2026-11-02T20:03:44.472457+00:00",
     "source_sha256": "c21d3095258f60c8ef9b9917b87debe69e9c99139bfd717dc83ef933fb267ea1",
-    "snapshot_generated_at": "2026-11-02T14:58:09.471633+00:00",
+    "snapshot_generated_at": "2026-11-02T20:03:44.485810+00:00",
     "sla": "2 hours"
   },
   "incident": {
     "incident_id": "DQ-2026-001",
     "title": "Corrupted August transaction batch",
-    "run_id": "run-5d5dfed64e21427b",
+    "run_id": "run-af253d3bbd994b75",
     "source_asset_id": "source.card_transactions",
     "source_file": "transactions_corrupt.csv",
     "source_sha256": "c5d2b71845112fbbd1cf627d05c3b24dc6905405e57de2921b10a030bbd9a5a8",
@@ -66,12 +66,12 @@
       },
       {
         "rule_id": "transaction_timestamp_valid",
-        "description": "Transaction timestamp is ISO-8601",
+        "description": "Transaction timestamp is canonical UTC ISO-8601",
         "severity": "critical",
         "passed": 0,
         "failed_rows": 1,
         "observed_value": "1 failing rows",
-        "expected_value": "Every timestamp parses as ISO-8601"
+        "expected_value": "YYYY-MM-DDTHH:MM:SS[.microseconds] with Z or +00:00"
       }
     ],
     "impacted_asset_ids": [
@@ -147,7 +147,7 @@
     "slope": 0.095143,
     "intercept": 317.92381,
     "training_points": 6,
-    "trained_at": "2026-11-02T14:58:09.454812+00:00"
+    "trained_at": "2026-11-02T20:03:44.472420+00:00"
   },
   "experiment": {
     "experiment_id": "card-alert-enrollment-v1",
@@ -1064,39 +1064,39 @@
   ],
   "audit_events": [
     {
-      "event_id": "event-e2a8eaacce004f0b",
-      "event_ts": "2026-11-02T14:58:09.459054+00:00",
+      "event_id": "event-cdee373787cc4e5d",
+      "event_ts": "2026-11-02T20:03:44.476019+00:00",
       "actor": "system:pipeline",
       "action": "batch.quarantined",
       "resource_id": "source.card_transactions",
-      "run_id": "run-5d5dfed64e21427b",
+      "run_id": "run-af253d3bbd994b75",
       "outcome": "blocked"
     },
     {
-      "event_id": "event-d4ac7c8e1d124550",
-      "event_ts": "2026-11-02T14:58:09.454920+00:00",
+      "event_id": "event-6582db4b64324a78",
+      "event_ts": "2026-11-02T20:03:44.472500+00:00",
       "actor": "system:pipeline",
       "action": "batch.published",
       "resource_id": "validated.card_transactions",
-      "run_id": "run-1c9a318f3ae24d21",
+      "run_id": "run-835be64a768c4363",
       "outcome": "succeeded"
     },
     {
-      "event_id": "event-1c9863a531be41ea",
-      "event_ts": "2026-11-02T14:58:09.416746+00:00",
+      "event_id": "event-f4eb2fc5f1634901",
+      "event_ts": "2026-11-02T20:03:44.439835+00:00",
       "actor": "system:pipeline",
       "action": "batch.published",
       "resource_id": "validated.card_accounts",
-      "run_id": "run-62d18d428b604f39",
+      "run_id": "run-dd90c350e8554315",
       "outcome": "succeeded"
     },
     {
-      "event_id": "event-430d1d65f257452e",
-      "event_ts": "2026-11-02T14:58:09.410342+00:00",
+      "event_id": "event-e0527acd2e424e89",
+      "event_ts": "2026-11-02T20:03:44.435258+00:00",
       "actor": "system:pipeline",
       "action": "batch.published",
       "resource_id": "validated.customer_profiles",
-      "run_id": "run-0edf54c6ff914277",
+      "run_id": "run-2c6bfba099ab4edf",
       "outcome": "succeeded"
     }
   ],

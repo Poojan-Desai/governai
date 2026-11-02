@@ -257,7 +257,13 @@ class CloudPipeline:
                     run_id=run_id,
                     event_type="PIPELINE_FAILED",
                     status="FAILED",
-                    details={"error_type": type(exc).__name__, "message": str(exc)[:500]},
+                    # SDK/dbt messages may contain credentials, query values,
+                    # or source records. Persist a safe explanation only;
+                    # callers still receive the original exception.
+                    details={
+                        "error_type": type(exc).__name__,
+                        "message": "Cloud operation failed; inspect the originating exception in the authorized execution environment.",
+                    },
                 )
             finally:
                 raise

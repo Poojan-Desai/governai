@@ -22,6 +22,13 @@ erDiagram
 | `CURATED.FEATURE_ACCOUNT_BEHAVIOR_30D` | Account/latest as-of date | dbt table | Explainable behavioral features, not a classifier |
 | `ANALYTICS.MART_MONTHLY_LOSS_KPIS` | UTC calendar month | dbt table | Dashboard-ready loss totals and rates |
 
+Transaction timestamps must use canonical UTC ISO-8601 text:
+`YYYY-MM-DDTHH:MM:SS[.microseconds]Z` or the equivalent `+00:00` suffix.
+The shared quality gate rejects missing/nonzero offsets, basic/week dates,
+date-only values, and alternate separators before loading. Local products derive
+day/month keys from this validated text prefix, so an offset or alternate date
+representation cannot silently place a transaction in the wrong UTC month.
+
 Phase 3A also registers two virtual catalog assets:
 `EXPERIMENT.CARD_ALERT_ENROLLMENT_V1` for the aggregate experiment evidence and
 `DASHBOARD.EXPERIMENT_LAB` for its governed presentation. The experiment reads

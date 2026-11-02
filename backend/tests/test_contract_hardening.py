@@ -82,6 +82,25 @@ class ContractHardeningTests(unittest.TestCase):
                 checks = validator([{**row, "is_fraud": value}], columns=fields)
                 self.assertFalse(next(c for c in checks if c.rule_id == "transaction_fraud_flag_binary").passed)
 
+    def test_timestamps_preserve_canonical_utc_calendar_keys(self) -> None:
+        _, fields, validator, row = self.cases[2]
+        for timestamp in (
+            "2026-01-31T23:59:59+00:00", "2026-01-31T23:59:59Z",
+            "2026-01-31T23:59:59.123456+00:00", "2026-01-31T23:59:59.1Z",
+        ):
+            with self.subTest(valid=timestamp):
+                checks = validator([{**row, "transaction_ts": timestamp}], columns=fields)
+                self.assertTrue(next(c for c in checks if c.rule_id == "transaction_timestamp_valid").passed)
+        for timestamp in (
+            "20260131T23:59:59+00:00", "2026-W05-6T23:59:59+00:00",
+            "2026-01-31", "2026-01-31T23:59:59", "2026-01-31 23:59:59+00:00",
+            "2026-01-31T23:59:59-01:00", "2026-02-01T00:00:00+01:00",
+            "2026-02-30T12:00:00Z", "2026-01-31T24:00:00Z",
+        ):
+            with self.subTest(invalid=timestamp):
+                checks = validator([{**row, "transaction_ts": timestamp}], columns=fields)
+                self.assertFalse(next(c for c in checks if c.rule_id == "transaction_timestamp_valid").passed)
+
     def test_empty_batches_are_not_successful_even_with_valid_headers(self) -> None:
         for dataset, fields, validator, _ in self.cases:
             with self.subTest(dataset=dataset):
@@ -181,6 +200,8 @@ class LocalEvidenceTests(unittest.TestCase):
             {"transaction_id": " "}, {"amount": "nan"}, {"amount": "inf"},
             {"confirmed_loss": "nan"}, {"is_fraud": "2"},
             {"account_id": "ACC-MISSING"}, {"merchant_category": ""},
+            {"transaction_ts": "20260131T23:59:59+00:00"},
+            {"transaction_ts": "2026-01-31T23:59:59-01:00"},
         )
         before = self.products()
         for index, mutation in enumerate(variants):

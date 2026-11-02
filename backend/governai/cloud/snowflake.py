@@ -312,7 +312,10 @@ class SnowflakeWarehouse:
                     WHEN MATCHED THEN UPDATE SET STATUS='FAILED', ERROR_MESSAGE=%s,
                       COMPLETED_AT=CURRENT_TIMESTAMP()
                     """,
-                    (manifest.batch_id, str(exc)[:1000]),
+                    # COPY/connector errors can quote source values or secrets.
+                    # Keep the original exception for the caller, never in the
+                    # durable governance error field.
+                    (manifest.batch_id, f"{type(exc).__name__}: Warehouse load failed; data writes rolled back."),
                 )
                 connection.commit()
             except Exception:

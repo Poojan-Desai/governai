@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Iterable, Mapping, Sequence
@@ -82,6 +83,26 @@ def _iso_date(value: str) -> bool:
         return False
 
 
+_UTC_TIMESTAMP = re.compile(
+    r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"
+    r"(?:\.[0-9]{1,6})?(?:Z|\+00:00)"
+)
+
+
+def _utc_timestamp(value: str) -> bool:
+    # Products derive UTC day/month keys from the canonical text prefix.
+    # Python accepts basic/week dates and arbitrary datetime separators, and
+    # offsets can put the actual UTC instant in a different calendar month.
+    # Reject those representations before any local or cloud load.
+    if _UTC_TIMESTAMP.fullmatch(value) is None:
+        return False
+    try:
+        datetime.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
+
+
 def _finite_number(row: Mapping[str, str], field: str) -> float | None:
     try:
         value = float(_text(row, field))
@@ -137,10 +158,7 @@ def validate_transactions(
         amount = _finite_number(row, "amount")
         loss = _finite_number(row, "confirmed_loss")
         bad_amounts += amount is None or amount <= 0
-        try:
-            datetime.fromisoformat(_text(row, "transaction_ts"))
-        except ValueError:
-            bad_timestamps += 1
+        bad_timestamps += not _utc_timestamp(_text(row, "transaction_ts"))
         bad_losses += amount is None or loss is None or loss < 0 or loss > max(amount, 0)
     return [
         *_batch_checks("transaction", rows, TRANSACTION_FIELDS, columns),
@@ -148,7 +166,7 @@ def validate_transactions(
         result("transaction_id_unique", "Transaction ID is unique within the batch", duplicates(rows, "transaction_id"), "0 duplicate IDs"),
         result("transaction_amount_positive", "Transaction amount is finite and positive", bad_amounts, "Every amount is finite and > 0"),
         result("transaction_account_fk", "Every transaction references a known account", sum(_text(r, "account_id") not in known for r in rows), "0 orphan transactions"),
-        result("transaction_timestamp_valid", "Transaction timestamp is ISO-8601", bad_timestamps, "Every timestamp parses as ISO-8601"),
+        result("transaction_timestamp_valid", "Transaction timestamp is canonical UTC ISO-8601", bad_timestamps, "YYYY-MM-DDTHH:MM:SS[.microseconds] with Z or +00:00"),
         result("confirmed_loss_bounded", "Confirmed loss is finite and bounded by transaction amount", bad_losses, "Finite values with 0 <= confirmed_loss <= amount"),
         result("transaction_fraud_flag_binary", "Fraud flag is 0 or 1", sum(_text(r, "is_fraud") not in {"0", "1"} for r in rows), "Every is_fraud is 0 or 1"),
     ]

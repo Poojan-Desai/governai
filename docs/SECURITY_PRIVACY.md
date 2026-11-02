@@ -60,3 +60,10 @@ explanation, not raw exception messages or source records. Failures before a
 local run is registered (for example, an unreadable file or unavailable database)
 are still raised to the caller and are not claimed as retained execution history.
 See [local quality controls](LOCAL_QUALITY_CONTROLS.md).
+
+Cloud failure events and Snowflake batch-load error fields also retain only an
+exception class and fixed operational explanation. Raw SDK/dbt exception text
+is returned to the authorized caller, not copied into durable cloud audit
+details, because it may contain source values or credentials. This redaction
+does not imply whole-run cloud rollback: accepted earlier batches may already
+have loaded before a later cloud operation fails.
