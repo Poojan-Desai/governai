@@ -40,6 +40,9 @@ class MemoryObjectStore:
     def put_file(self, *, zone: str, dataset: str, manifest: BatchManifest, path: Path) -> ObjectWriteResult:
         return self._put(zone, dataset, manifest, path.name, path.read_bytes())
 
+    def put_csv(self, *, zone: str, dataset: str, manifest: BatchManifest, filename: str, content: bytes) -> ObjectWriteResult:
+        return self._put(zone, dataset, manifest, filename, content)
+
     def put_json(self, *, zone: str, dataset: str, manifest: BatchManifest, filename: str, content: str) -> ObjectWriteResult:
         return self._put(zone, dataset, manifest, filename, content.encode())
 
@@ -350,6 +353,113 @@ class CloudPhase2Tests(unittest.TestCase):
         self.assertFalse(second.created)
         self.assertEqual(stored["ServerSideEncryption"], "aws:kms")
         self.assertEqual(stored["Metadata"]["source-sha256"], "a" * 64)
+
+    def test_base_capture_survives_source_replacement_or_removal(self) -> None:
+        for mutation in ("replace", "remove"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                generated = self._fixture(Path(directory))
+                expected = {name: (generated.base_dir / f"{name}.csv").read_bytes()
+                            for name, _, _ in CloudPipeline.DATASETS}
+                store, warehouse, dbt = MemoryObjectStore(), MemoryWarehouse(), RecordingDbt()
+                pipeline = CloudPipeline(object_store=store, warehouse=warehouse, dbt=dbt)
+                capture = pipeline._capture
+
+                def capture_then_mutate(path):
+                    source = capture(path)
+                    if mutation == "replace":
+                        path.write_text("replacement,bytes\nnot,validated\n")
+                    else:
+                        path.unlink()
+                    return source
+
+                with patch.object(pipeline, "_capture", side_effect=capture_then_mutate):
+                    report = pipeline.run_base(source_dir=generated.base_dir)
+                self.assertEqual(report.status, "SUCCEEDED")
+                for batch in report.batches:
+                    content = expected[batch.manifest.dataset]
+                    parsed = csv.DictReader(content.decode().splitlines())
+                    self.assertEqual(batch.manifest.row_count, len(list(parsed)))
+                    self.assertEqual(batch.manifest.columns, tuple(parsed.fieldnames))
+                    self.assertEqual(batch.manifest.source_sha256, hashlib.sha256(content).hexdigest())
+                    self.assertEqual(store.objects[batch.raw_object.key], content)
+                    self.assertEqual(store.objects[batch.validated_object.key], content)
+
+    def test_incident_capture_survives_source_replacement_or_removal(self) -> None:
+        for mutation in ("replace", "remove"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                generated = self._fixture(Path(directory))
+                expected = generated.incident_file.read_bytes()
+                store, warehouse, dbt = MemoryObjectStore(), MemoryWarehouse(), RecordingDbt()
+                pipeline = CloudPipeline(object_store=store, warehouse=warehouse, dbt=dbt)
+                capture = pipeline._capture
+
+                def capture_then_mutate(path):
+                    source = capture(path)
+                    if mutation == "replace":
+                        path.write_text("replacement,bytes\nnot,validated\n")
+                    else:
+                        path.unlink()
+                    return source
+
+                with patch.object(pipeline, "_capture", side_effect=capture_then_mutate):
+                    report = pipeline.run_incident(
+                        incident_file=generated.incident_file,
+                        known_account_ids={f"ACC-{index:05d}" for index in range(1, 26)},
+                    )
+                batch = report.batches[0]
+                self.assertEqual(report.status, "QUARANTINED")
+                self.assertEqual(batch.manifest.source_sha256, hashlib.sha256(expected).hexdigest())
+                self.assertEqual(store.objects[batch.raw_object.key], expected)
+                self.assertEqual(store.objects[batch.quarantine_object.key], expected)
+                self.assertEqual(warehouse.loads, [])
+                self.assertEqual(dbt.calls, [])
+
+    def test_capture_stays_consistent_when_original_changes_during_upload(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            generated = self._fixture(Path(directory))
+            store, warehouse, dbt = MemoryObjectStore(), MemoryWarehouse(), RecordingDbt()
+            put_csv = store.put_csv
+
+            def upload_then_replace(**kwargs):
+                result = put_csv(**kwargs)
+                if kwargs["zone"] == "raw":
+                    (generated.base_dir / kwargs["filename"]).write_text("wrong,source\n1,2\n")
+                return result
+
+            with patch.object(store, "put_csv", side_effect=upload_then_replace):
+                report = CloudPipeline(object_store=store, warehouse=warehouse, dbt=dbt).run_base(source_dir=generated.base_dir)
+            self.assertEqual(report.status, "SUCCEEDED")
+            for batch in report.batches:
+                raw = store.objects[batch.raw_object.key]
+                self.assertEqual(raw, store.objects[batch.validated_object.key])
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), batch.manifest.source_sha256)
+
+    def test_s3_capture_hash_mismatch_stops_before_any_cloud_call(self) -> None:
+        client = Mock()
+        lake = S3DataLake(client=client, bucket="governai-test", kms_key_arn="test-key")
+        manifest = BatchManifest("2.0", "batch-abc", "source.test", "transactions", "x.csv", "a" * 64, 1, ("id",))
+        with self.assertRaisesRegex(ValueError, "SHA-256"):
+            lake.put_csv(zone="validated", dataset="transactions", manifest=manifest,
+                         filename="x.csv", content=b"id\n1\n")
+        client.head_object.assert_not_called()
+        client.put_object.assert_not_called()
+
+    def test_s3_capture_writes_exact_bytes_and_matching_hash(self) -> None:
+        content = b"id\r\n1\r\n"
+        digest = hashlib.sha256(content).hexdigest()
+        manifest = BatchManifest("2.0", "batch-abc", "source.test", "transactions", "x.csv", digest, 1, ("id",))
+        client = FakeS3Client()
+        lake = S3DataLake(client=client, bucket="governai-test", kms_key_arn="test-key")
+        first = lake.put_csv(zone="validated", dataset="transactions", manifest=manifest,
+                             filename="x.csv", content=content)
+        second = lake.put_csv(zone="validated", dataset="transactions", manifest=manifest,
+                              filename="x.csv", content=content)
+        stored = client.objects[(lake.bucket, first.key)]
+        self.assertTrue(first.created)
+        self.assertFalse(second.created)
+        self.assertEqual(stored["Body"], content)
+        self.assertEqual(stored["Metadata"]["content-sha256"], digest)
+        self.assertEqual(stored["Metadata"]["source-sha256"], digest)
 
     def test_manifest_is_deterministic_and_snowflake_paths_are_constrained(self) -> None:
         manifest = BatchManifest("2.0", "batch-abc", "source.test", "transactions", "x.csv", "b" * 64, 3, ("b", "a"))

@@ -111,6 +111,18 @@ class S3DataLake:
             body=path.read_bytes(),
         )
 
+    def put_csv(
+        self, *, zone: str, dataset: str, manifest: BatchManifest,
+        filename: str, content: bytes,
+    ) -> ObjectWriteResult:
+        """Upload the validated capture without reopening a mutable source path."""
+        if hashlib.sha256(content).hexdigest() != manifest.source_sha256:
+            raise ValueError("Captured CSV SHA-256 does not match its manifest")
+        return self._put_bytes(
+            zone=zone, dataset=dataset, manifest=manifest,
+            filename=filename, body=content,
+        )
+
     def put_json(
         self,
         *,

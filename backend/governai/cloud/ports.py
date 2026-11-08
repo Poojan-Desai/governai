@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Mapping, Protocol, Sequence
 
 from .models import BatchManifest, LoadResult, ObjectWriteResult
@@ -11,13 +10,14 @@ from .models import BatchManifest, LoadResult, ObjectWriteResult
 class ObjectStore(Protocol):
     bucket: str
 
-    def put_file(
+    def put_csv(
         self,
         *,
         zone: str,
         dataset: str,
         manifest: BatchManifest,
-        path: Path,
+        filename: str,
+        content: bytes,
     ) -> ObjectWriteResult: ...
 
     def put_json(

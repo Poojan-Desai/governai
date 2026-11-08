@@ -3,20 +3,31 @@
 from __future__ import annotations
 
 import csv
+import hashlib
+import io
 import json
 import uuid
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Iterable, Mapping, Sequence
 
 from governai.catalog import EDGES
 from governai.contracts import CheckResult, has_critical_failure, validate_accounts, validate_customers, validate_transactions
-from governai.generator import sha256_file
 from governai.pipeline import LocalPipeline
 
 from .models import BatchManifest, BatchReport, CloudRunReport
 from .ports import ObjectStore, TransformationRunner, Warehouse
 from .reconcile import Reconciler
+
+
+@dataclass(frozen=True)
+class CapturedCSV:
+    """One immutable byte capture owns parsing, provenance and all uploads."""
+
+    content: bytes
+    rows: tuple[dict[str, str], ...]
+    columns: tuple[str, ...]
+    sha256: str
 
 
 class QualityGateError(RuntimeError):
@@ -50,26 +61,27 @@ class CloudPipeline:
         self.dbt = dbt
 
     @staticmethod
-    def _rows(path: Path) -> tuple[list[dict[str, str]], tuple[str, ...]]:
-        with path.open("r", encoding="utf-8", newline="") as handle:
-            reader = csv.DictReader(handle)
-            rows = list(reader)
-            return rows, tuple(reader.fieldnames or ())
+    def _capture(path: Path) -> CapturedCSV:
+        content = path.read_bytes()
+        reader = csv.DictReader(io.StringIO(content.decode("utf-8"), newline=""))
+        return CapturedCSV(
+            content, tuple(reader), tuple(reader.fieldnames or ()),
+            hashlib.sha256(content).hexdigest(),
+        )
 
     @staticmethod
     def _manifest(
-        *, dataset: str, asset_id: str, path: Path, rows: int, columns: tuple[str, ...], label: str
+        *, dataset: str, asset_id: str, path: Path, source: CapturedCSV, label: str
     ) -> BatchManifest:
-        source_sha = sha256_file(path)
         return BatchManifest(
             manifest_version="2.0",
-            batch_id=LocalPipeline.batch_id(asset_id, source_sha, label),
+            batch_id=LocalPipeline.batch_id(asset_id, source.sha256, label),
             asset_id=asset_id,
             dataset=dataset,
             source_file=path.name,
-            source_sha256=source_sha,
-            row_count=rows,
-            columns=columns,
+            source_sha256=source.sha256,
+            row_count=len(source.rows),
+            columns=source.columns,
         )
 
     @staticmethod
@@ -136,17 +148,18 @@ class CloudPipeline:
         try:
             for dataset, asset_id, filename in self.DATASETS:
                 path = source_dir / filename
-                rows, columns = self._rows(path)
+                source = self._capture(path)
+                rows, columns = source.rows, source.columns
                 manifest = self._manifest(
                     dataset=dataset,
                     asset_id=asset_id,
                     path=path,
-                    rows=len(rows),
-                    columns=columns,
+                    source=source,
                     label="base",
                 )
-                raw = self.object_store.put_file(
-                    zone="raw", dataset=dataset, manifest=manifest, path=path
+                raw = self.object_store.put_csv(
+                    zone="raw", dataset=dataset, manifest=manifest,
+                    filename=path.name, content=source.content,
                 )
                 self.object_store.put_json(
                     zone="raw",
@@ -157,8 +170,9 @@ class CloudPipeline:
                 )
                 checks = self._checks(dataset, rows, known_customers, known_accounts, columns)
                 if has_critical_failure(checks):
-                    quarantine = self.object_store.put_file(
-                        zone="quarantined", dataset=dataset, manifest=manifest, path=path
+                    quarantine = self.object_store.put_csv(
+                        zone="quarantined", dataset=dataset, manifest=manifest,
+                        filename=path.name, content=source.content,
                     )
                     evidence = json.dumps(
                         {
@@ -201,8 +215,9 @@ class CloudPipeline:
                 elif dataset == "accounts":
                     known_accounts = {row["account_id"] for row in rows}
 
-                validated = self.object_store.put_file(
-                    zone="validated", dataset=dataset, manifest=manifest, path=path
+                validated = self.object_store.put_csv(
+                    zone="validated", dataset=dataset, manifest=manifest,
+                    filename=path.name, content=source.content,
                 )
                 self.object_store.put_json(
                     zone="validated",
@@ -273,17 +288,18 @@ class CloudPipeline:
     ) -> CloudRunReport:
         """Run only the bad transaction batch; warehouse load and dbt are forbidden."""
         run_id = f"cloud-run-{uuid.uuid4().hex[:16]}"
-        rows, columns = self._rows(incident_file)
+        source = self._capture(incident_file)
+        rows, columns = source.rows, source.columns
         manifest = self._manifest(
             dataset="transactions",
             asset_id="source.card_transactions",
             path=incident_file,
-            rows=len(rows),
-            columns=columns,
+            source=source,
             label="quality-incident-001",
         )
-        raw = self.object_store.put_file(
-            zone="raw", dataset="transactions", manifest=manifest, path=incident_file
+        raw = self.object_store.put_csv(
+            zone="raw", dataset="transactions", manifest=manifest,
+            filename=incident_file.name, content=source.content,
         )
         self.object_store.put_json(
             zone="raw",
@@ -296,11 +312,12 @@ class CloudPipeline:
         report = CloudRunReport(run_id=run_id, status="RUNNING")
         if not has_critical_failure(checks):
             raise RuntimeError("Incident fixture unexpectedly passed its quality contract")
-        quarantine = self.object_store.put_file(
+        quarantine = self.object_store.put_csv(
             zone="quarantined",
             dataset="transactions",
             manifest=manifest,
-            path=incident_file,
+            filename=incident_file.name,
+            content=source.content,
         )
         self.object_store.put_json(
             zone="quarantined",
