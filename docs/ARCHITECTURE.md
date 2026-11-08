@@ -62,6 +62,14 @@ sequenceDiagram
 
 ## Idempotency and reconciliation
 
+Cloud orchestration captures each source file into bytes once. Parsing, column
+order, row count, SHA-256 and raw/validated/quarantine uploads all use that same
+capture. Replacing or deleting the original path after capture cannot change
+what passes the contract or reaches storage. The S3 capture-upload entry point
+rejects a manifest/content hash mismatch before invoking the client. Captures
+are memory-resident; streaming/size limits and cloud concurrency controls remain
+future work. This behavior is locally tested with adapters, not live-verified.
+
 The batch ID is the first 16 hexadecimal characters of SHA-256 over stable asset
 ID, source SHA-256, and batch label. Repeating identical input therefore targets
 the same S3 keys and Snowflake audit row. S3 returns the existing object only if

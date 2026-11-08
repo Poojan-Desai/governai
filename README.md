@@ -20,6 +20,8 @@ sanitized evidence in a dashboard.
 - **Source integrity:** the local pipeline derives rows, headers, SHA-256 and
   byte size from one captured source. SQLite writer serialization protects batch
   identity and cross-batch duplicate checks; savepoints roll back partial writes.
+  Cloud orchestration now also parses, hashes and uploads one captured byte
+  payload, so source replacement after capture cannot change accepted evidence.
 - **Inspectable controls:** seven executable procedures cover quarantine,
   idempotent replay, duplicate rejection, reconciliation, masking, unsafe
   assistant input and rollback. The dashboard exports the same sanitized JSON.
@@ -77,11 +79,12 @@ All data is simulated. No live AWS, Snowflake or dbt execution, customer
 experiment, external LLM call, regulatory certification or production model
 approval is claimed. Model results use a small synthetic dataset.
 
-The local source-capture and cross-batch replay protections do **not** yet have
-cloud parity: the cloud orchestrator reopens source paths between validation,
-hashing and upload. Immutable cloud staging and cloud replay conflict handling
-remain required before production use. Cloud definitions are implementation
-artifacts tested with fakes/static contracts, not a deployed platform.
+The [November 7 portfolio audit](docs/VERIFICATION_2026-11-07.md) verifies the
+cloud source-capture fix with adversarial local tests. Cloud cross-batch replay
+and concurrent object-write conflict handling still require work before
+production use. Captures are memory-resident and require a bounded source size.
+Cloud definitions are implementation artifacts tested with fakes/static
+contracts, not a deployed platform.
 
 Local database access is not protected by the cloud RBAC definitions. Email
 masking is pseudonymization, and report checksums are not authenticated signatures.
